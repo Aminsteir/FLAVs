@@ -135,21 +135,21 @@ python simulations/decentralized.py \
 
 ### **Dual-Stream Model**
 - **Frame Stream Input**:
-  - Processes three consecutive RGB frames (\( A_{t-2}, A_{t-1}, A_t \)).
+  - Processes three consecutive RGB frames $\{ A_{t-2}, A_{t-1}, A_t \}$.
 - **Optical Flow Stream Input**:
   - Processes two optical flow maps:
-    - \( O_{t-1} = f(A_{t-2}, A_{t-1}) \)
-    - \( O_t = f(A_{t-1}, A_t) \).
-- Predicts the steering angle for \( A_t \).
+    - $O_{t-1} = f(A_{t-2}, A_{t-1})$
+    - $O_t = f(A_{t-1}, A_t)$
+- Predicts the steering angle for $A_t$.
 
 ### **Loss Function**
 The loss is computed as:
-\[
-Loss = \frac{1}{N} \sum_{t=1}^N (\theta_t - \hat{\theta}_t)^2
-\]
+```math
+\text{Loss} = \frac{1}{N} \sum_{t=1}^N (\theta_t - \hat{\theta}_t)^2
+```
 Where:
-- \( \theta_t \): Ground truth steering angle for frame \( A_t \).
-- \( \hat{\theta}_t \): Predicted steering angle for \( A_t \).
+- $\theta_t$: Ground truth steering angle for frame $A_t$.
+- $\hat{\theta}_t$: Predicted steering angle for $A_t$.
 
 ### **Worker Implementation**
 Each worker:
