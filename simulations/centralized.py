@@ -1,7 +1,8 @@
 import torch
 from models.base_model import DualStreamModel
 from workers.worker import Worker
-from utils.data_loader import AutonomousVehicleDataset, transform, split_dataset_for_workers
+from utils.data_loader import AutonomousVehicleDataset, transform
+from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 import argparse
 

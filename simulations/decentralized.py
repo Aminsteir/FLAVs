@@ -3,7 +3,8 @@ import argparse
 import random
 from models.base_model import DualStreamModel
 from workers.worker import Worker
-from utils.data_loader import AutonomousVehicleDataset, transform, split_dataset_for_workers
+from utils.data_loader import AutonomousVehicleDataset, transform
+from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 
 def decentralized_simulation(data_folder, data_file, num_workers=5, rounds=5, epochs_per_worker=3, base_model_path=None, device='cpu'):
