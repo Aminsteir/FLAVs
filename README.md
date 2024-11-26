@@ -64,10 +64,6 @@ Project/
 - Python 3.8 or higher
 - PyTorch 2.0 or higher
 - OpenCV for optical flow computation
-- Install dependencies:
-  ```bash
-  pip install -r requirements.txt
-  ```
 
 ### **Dataset Structure**
 The `data/` folder contains two datasets:
