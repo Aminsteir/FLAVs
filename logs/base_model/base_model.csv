@@ -1,1 +1,3 @@
 Epoch,Mode,Loss,Accuracy
+1,train,580.5591274545466,
+1,test,287.94590722563123,

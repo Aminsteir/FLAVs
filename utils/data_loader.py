@@ -67,6 +67,10 @@ class AutonomousVehicleDataset(Dataset):
             # Prepare frame sequences for 3D convolution model
             frame_input = torch.stack([self.transform(frame) for frame in frames], dim=0)  # Shape: [3, 3, H, W]
             return frame_input, torch.tensor(current_item[1], dtype=torch.float32)
+        
+        elif self.model_type == "temporal_transformer":
+            frame_input = torch.stack([self.transform(frame) for frame in frames], dim=0)  # Shape: [3, 3, H, W]
+            return frame_input, torch.tensor(current_item[1], dtype=torch.float32)
 
         else:
             raise ValueError(f"Unsupported model type: {self.model_type}")

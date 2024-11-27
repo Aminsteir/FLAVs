@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
+from torchvision.models import MobileNet_V3_Small_Weights
 
 class TemporalTransformer(nn.Module):
     def __init__(self, frame_dim=1280, num_frames=3, num_heads=4, hidden_dim=256, ff_dim=512, num_layers=4):
@@ -19,7 +20,7 @@ class TemporalTransformer(nn.Module):
         super(TemporalTransformer, self).__init__()
         
         # Lightweight CNN backbone for spatial feature extraction
-        self.cnn_backbone = models.mobilenet_v3_small(pretrained=True).features
+        self.cnn_backbone = models.mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT).features
         self.cnn_fc = nn.Sequential(
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
@@ -30,7 +31,7 @@ class TemporalTransformer(nn.Module):
         # Temporal Transformer
         self.embedding = nn.Linear(frame_dim, hidden_dim)
         self.positional_encoding = nn.Parameter(torch.zeros(1, num_frames, hidden_dim))
-        encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_dim, nhead=num_heads, dim_feedforward=ff_dim)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_dim, nhead=num_heads, dim_feedforward=ff_dim, batch_first=True)
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
         # Fully connected head
