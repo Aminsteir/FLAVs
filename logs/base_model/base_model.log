@@ -1,0 +1,4 @@
+2024-11-27 13:16:05,664 - Epoch: 1, Mode: train, Loss: 2843.440353, Accuracy: N/A
+2024-11-27 13:21:35,126 - Epoch: 1, Mode: test, Loss: 918.569676, Accuracy: N/A
+2024-11-27 13:32:10,068 - Epoch: 2, Mode: train, Loss: 965.282735, Accuracy: N/A
+2024-11-27 13:37:42,492 - Epoch: 2, Mode: test, Loss: 918.415984, Accuracy: N/A

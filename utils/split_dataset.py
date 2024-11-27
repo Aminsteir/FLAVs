@@ -30,3 +30,17 @@ def split_dataset_for_workers(dataset, num_workers, sequence_length=3):
 
     # Split the dataset into non-overlapping subsets
     return torch.utils.data.random_split(dataset, worker_data_sizes)
+
+def sample_subset(dataset, subset_ratio):
+    """
+    Sample a random subset of the dataset.
+
+    Args:
+        dataset (Dataset): The complete dataset.
+        subset_ratio (float): Fraction of the dataset to sample (e.g., 0.1 for 10%).
+
+    Returns:
+        Subset[Dataset]: A random subset of the dataset.
+    """
+    subset_size = int(len(dataset) * subset_ratio)
+    return torch.utils.data.random_split(dataset, [subset_size, len(dataset) - subset_size])[0]
