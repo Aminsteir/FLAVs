@@ -3,6 +3,7 @@ import argparse
 import random
 from models.dual_stream import DualStreamModel
 from utils.logging_utils import Logger
+from utils.swap_data import swap_worker_data
 from workers.worker import Worker
 from utils.data_loader import AutonomousVehicleDataset
 from utils.split_dataset import split_dataset_for_workers
@@ -72,6 +73,9 @@ def decentralized_simulation(model_type, data_folder, data_file, num_workers=5, 
         # Step 4.4: Update weights for all workers
         for worker in workers:
             worker.update_weights(updated_weights[worker.worker_id])
+
+        # Randomly swap worker data -- simulate new environments
+        swap_worker_data(workers)
 
         # Log round-level metrics
         logger.log(epoch=round + 1, mode="train", loss=avg_loss)

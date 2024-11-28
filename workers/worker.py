@@ -2,7 +2,6 @@ import torch
 from torch.utils.data import DataLoader, random_split
 import torch.nn.functional as F
 from models.registry import get_model
-from utils.split_dataset import sample_subset
 
 class Worker:
     def __init__(self, model_type, worker_id, dataset, base_model_path=None, split_ratio=0.8, batch_size=16, device='cpu'):
@@ -17,18 +16,16 @@ class Worker:
             self.model.load_state_dict(torch.load(base_model_path, map_location=device))
 
         # Split the dataset into train/test
-        train_size = int(split_ratio * len(dataset))
-        test_size = len(dataset) - train_size
-        self.train_dataset, self.test_dataset = random_split(dataset, [train_size, test_size])
+        self.train_dataset, self.test_dataset = random_split(dataset, [split_ratio, 1 - split_ratio])
 
         self.test_loader = DataLoader(self.test_dataset, batch_size=batch_size, shuffle=False)
 
-    def train(self, epochs=5, lr=1e-5, subset_ratio=0.2):
+    def train(self, epochs=5, lr=1e-5, subset_ratio=0.25):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, betas=(0.6, 0.99), eps=1e-8)
         self.model.train()
 
         # Sample a subset of the training data -- doesn't need to train on all the data available
-        subset = sample_subset(self.train_dataset, subset_ratio)
+        subset, _ = random_split(self.train_dataset, [subset_ratio, 1 - subset_ratio])
         train_loader = DataLoader(subset, batch_size=self.batch_size, shuffle=True)
 
         for epoch in range(epochs):

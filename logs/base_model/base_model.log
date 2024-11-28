@@ -1,8 +1,0 @@
-2024-11-27 13:16:05,664 - Epoch: 1, Mode: train, Loss: 2843.440353, Accuracy: N/A
-2024-11-27 13:21:35,126 - Epoch: 1, Mode: test, Loss: 918.569676, Accuracy: N/A
-2024-11-27 13:32:10,068 - Epoch: 2, Mode: train, Loss: 965.282735, Accuracy: N/A
-2024-11-27 13:37:42,492 - Epoch: 2, Mode: test, Loss: 918.415984, Accuracy: N/A
-2024-11-27 18:38:52,197 - Epoch: 1, Mode: train, Loss: 580.559127, Accuracy: N/A
-2024-11-27 18:40:22,586 - Epoch: 1, Mode: test, Loss: 287.945907, Accuracy: N/A
-2024-11-27 18:46:11,641 - Epoch: 2, Mode: train, Loss: 215.560867, Accuracy: N/A
-2024-11-27 18:47:44,104 - Epoch: 2, Mode: test, Loss: 120.717601, Accuracy: N/A

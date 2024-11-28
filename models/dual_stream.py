@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import cv2
 
 class DualStreamModel(nn.Module):
     def __init__(self, input_channels=9, flow_channels=2, image_size=(256, 455)):
