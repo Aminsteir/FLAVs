@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader, random_split
 import torch.nn.functional as F
 from models.registry import get_model
+from utils.loss import circular_loss
 
 class Worker:
     def __init__(self, model_type, worker_id, dataset, base_model_path=None, split_ratio=0.8, batch_size=16, device='cpu'):
@@ -31,13 +32,13 @@ class Worker:
         for epoch in range(epochs):
             total_loss = 0
             for batch in train_loader:
-                *inputs, labels = batch
+                *inputs, targets = batch
                 inputs = [inp.to(self.device) for inp in inputs]
-                labels = labels.to(self.device)
+                targets = targets.to(self.device)
 
                 optimizer.zero_grad()
                 outputs = self.model(*inputs)
-                loss = F.mse_loss(outputs.squeeze(-1), labels)
+                loss = circular_loss(outputs, targets)
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
@@ -52,12 +53,12 @@ class Worker:
         total_loss = 0
         with torch.no_grad():
             for batch in self.test_loader:
-                *inputs, labels = batch
+                *inputs, targets = batch
                 inputs = [inp.to(self.device) for inp in inputs]
-                labels = labels.to(self.device)
+                targets = targets.to(self.device)
                 
                 outputs = self.model(*inputs)
-                loss = F.mse_loss(outputs.squeeze(-1), labels)
+                loss = circular_loss(outputs, targets)
                 total_loss += loss.item()
 
         avg_loss = total_loss / len(self.test_loader)

@@ -38,7 +38,7 @@ class TemporalTransformer(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(hidden_dim, 128),
             nn.ReLU(),
-            nn.Linear(128, 1)  # Predict single steering angle
+            nn.Linear(128, 2)  # Predict sin(angle) and cos(angle)
         )
 
     def forward(self, x):
@@ -69,4 +69,7 @@ class TemporalTransformer(nn.Module):
         temporal_features = temporal_features.mean(dim=0)  # Global average pooling over time
 
         # Prediction head
-        return self.fc(temporal_features)
+        pred = self.fc(temporal_features)
+        
+        norm = pred / torch.linalg.norm(pred, ord=2, dim=1, keepdim=True)
+        return norm

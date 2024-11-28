@@ -5,6 +5,7 @@ from models.registry import get_model
 import numpy as np
 from utils.data_loader import AutonomousVehicleDataset
 
+
 def draw_steering_wheel(image, ground_truth_angle, predicted_angle):
     """
     Draws steering wheels for ground truth and predicted angles on the image.
@@ -75,19 +76,21 @@ def create_visualization_video(model, dataset, output_video_path, model_type, de
                                    (extended_width, frame_height))
 
     for item in dataset:
-        *inputs, ground_truth_angle = item  # Extract inputs and ground truth
+        *inputs, target = item  # Extract inputs and ground truth
+        sin_gt, cos_gt = target[0], target[1]
         frames = inputs[0]  # First input (frame stream)
+
+        # Convert ground truth to angle
+        ground_truth_angle = np.rad2deg(np.arctan2(sin_gt, cos_gt))
 
         # Prepare inputs dynamically based on model type
         if model_type == "dual_stream":
-            # Reshape frames into [num_frames, channels, height, width]
             reshaped_frames = frames.view(3, 3, 256, 455)  # 3 frames, 3 channels
             current_frame = reshaped_frames[-1].cpu().numpy().transpose(1, 2, 0)  # Extract last frame
             current_frame = (current_frame + 1.0) * 127.5  # Rescale [-1, 1] to [0, 255]
             current_frame = np.clip(current_frame, 0, 255).astype(np.uint8)
             current_frame = cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR)
         elif model_type in ["spatio_temporal", "temporal_transformer"]:
-            # Spatio-temporal models might already have frames split as needed
             current_frame = frames[-1].cpu().numpy().transpose(1, 2, 0)  # Convert to H x W x C
             current_frame = (current_frame + 1.0) * 127.5
             current_frame = np.clip(current_frame, 0, 255).astype(np.uint8)
@@ -100,7 +103,11 @@ def create_visualization_video(model, dataset, output_video_path, model_type, de
 
         # Perform model inference
         with torch.no_grad():
-            predicted_angle = model(*inputs).squeeze(-1).item()  # Pass frames + other inputs
+            outputs = model(*inputs)
+            sin_pred, cos_pred = outputs.squeeze(0).cpu().numpy()
+
+        # Convert prediction to angle
+        predicted_angle = np.rad2deg(np.arctan2(sin_pred, cos_pred))
 
         # Draw steering wheels for ground truth and prediction
         visual_frame = draw_steering_wheel(current_frame, ground_truth_angle, predicted_angle)

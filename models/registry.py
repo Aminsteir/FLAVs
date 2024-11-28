@@ -22,4 +22,5 @@ def get_model(model_type, **kwargs):
     """
     if model_type not in MODEL_REGISTRY:
         raise ValueError(f"Model type '{model_type}' not found in registry. Available: {list(MODEL_REGISTRY.keys())}")
+    
     return MODEL_REGISTRY[model_type](**kwargs)

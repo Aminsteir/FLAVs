@@ -6,6 +6,7 @@ from utils.data_loader import AutonomousVehicleDataset
 import torch.nn.functional as F
 
 from utils.logging_utils import Logger
+from utils.loss import circular_loss
 
 
 def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=0.7, epochs=10, batch_size=32, lr=0.001, device="cpu"):
@@ -27,9 +28,7 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
     dataset = AutonomousVehicleDataset(data_folder, data_file, model_type)
 
     # Step 2: Split dataset into training and validation sets
-    train_size = int(0.7 * len(dataset))
-    val_size = len(dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [split_ratio, 1 - split_ratio])
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
@@ -37,28 +36,26 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
     # Step 3: Initialize the model, optimizer, and loss function
     print("Initializing model...")
     model = get_model(args.model_type).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.6, 0.99), eps=1e-8)
 
     # Step 4: Training loop
     print("Starting training...")
 
     # Initialize logger
-    logger = Logger(log_dir="logs", scenario="base_model")
+    logger = Logger(log_dir="logs", scenario=f"{model_type}_base_model")
 
     for epoch in range(epochs):
         model.train()
         total_loss = 0
 
         for batch in train_loader:
-            # Unpack inputs and labels
-            *inputs, labels = batch
+            *inputs, targets = batch
             inputs = [inp.to(device) for inp in inputs]
-            labels = labels.to(device)
+            targets = targets.to(device)
 
             optimizer.zero_grad()
             outputs = model(*inputs)
-            loss = F.mse_loss(outputs.squeeze(-1), labels)
+            loss = circular_loss(outputs, targets)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
@@ -74,13 +71,12 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
         val_loss = 0
         with torch.no_grad():
             for batch in val_loader:
-                # Unpack input and labels
-                *inputs, labels = batch
+                *inputs, targets = batch
                 inputs = [inp.to(device) for inp in inputs]
-                labels = labels.to(device)
+                targets = targets.to(device)
 
                 outputs = model(*inputs)
-                loss = criterion(outputs.squeeze(-1), labels)
+                loss = circular_loss(outputs, targets)
                 val_loss += loss.item()
 
         avg_val_loss = val_loss / len(val_loader)

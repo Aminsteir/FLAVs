@@ -22,7 +22,7 @@ class SpatioTemporalModel(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(self.flattened_size, 256),
             nn.ReLU(),
-            nn.Linear(256, 1)  # Predict single steering angle
+            nn.Linear(256, 2)  # Predict sin(angle) and cos(angle)
         )
 
     def forward(self, x):
@@ -37,4 +37,8 @@ class SpatioTemporalModel(nn.Module):
         """
         x = self.spatial_temporal_conv(x)
         x = x.view(x.size(0), -1)  # Flatten
-        return self.fc(x)
+
+        pred = self.fc(x)
+
+        norm = pred / torch.linalg.norm(pred, ord=2, dim=1, keepdim=True)
+        return norm

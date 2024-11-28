@@ -16,7 +16,7 @@ class AutonomousVehicleDataset(Dataset):
         Args:
             data_folder (str): Path to the folder containing images.
             data_file (str): Path to the file containing image-to-angle mappings.
-            model_type (str): Type of model ("dual_stream", "spatio_temporal").
+            model_type (str): Type of model ("dual_stream", "spatio_temporal", "temporal_transformer").
             image_size (tuple): Image size (height, width).
         """
         self.data_folder = data_folder
@@ -33,7 +33,8 @@ class AutonomousVehicleDataset(Dataset):
         with open(data_file, "r") as f:
             for line in f.readlines():
                 filename, angle = line.strip().split(",")[0].split()[:2]
-                self.data.append((filename, float(angle)))
+                angle = float(angle)
+                self.data.append((filename, angle))
 
     def __len__(self):
         return len(self.data)
@@ -57,6 +58,11 @@ class AutonomousVehicleDataset(Dataset):
         ]
         frames = [Image.open(fp).convert("RGB") for fp in frame_paths]
 
+        # Convert angle to circular representation (sin, cos)
+        angle_rad = np.deg2rad(current_item[1])
+        sin_angle = np.sin(angle_rad)
+        cos_angle = np.cos(angle_rad)
+
         if self.model_type == "dual_stream":
             def compute_optical_flow(frame1, frame2):
                 """Compute optical flow using Gunnar Farneback's algorithm."""
@@ -76,12 +82,12 @@ class AutonomousVehicleDataset(Dataset):
             optical_flow_2 = compute_optical_flow(frames[1], frames[2])
             frame_input = torch.cat([self.transform(frame) for frame in frames], dim=0)  # Shape: [9, H, W]
             flow_input = torch.stack([optical_flow_1, optical_flow_2], dim=0)  # Shape: [2, H, W]
-            return frame_input, flow_input, torch.tensor(current_item[1], dtype=torch.float32)
+            return frame_input, flow_input, torch.tensor([sin_angle, cos_angle], dtype=torch.float32)
 
         elif self.model_type in ["spatio_temporal", "temporal_transformer"]:
             # Prepare frame sequences for 3D convolution model
             frame_input = torch.stack([self.transform(frame) for frame in frames], dim=0)  # Shape: [3, 3, H, W]
-            return frame_input, torch.tensor(current_item[1], dtype=torch.float32)
+            return frame_input, torch.tensor([sin_angle, cos_angle], dtype=torch.float32)
 
         else:
             raise ValueError(f"Unsupported model type: {self.model_type}")
