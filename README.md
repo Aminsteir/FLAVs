@@ -1,128 +1,147 @@
-# **Federated Learning for Autonomous Vehicle Steering Prediction**
+# **Autonomous Vehicle Federated Learning with Dual-Stream Models**
 
 ## **Overview**
 
-This project investigates the application of **federated learning** to autonomous vehicles, focusing on predicting steering angles from video data. The research compares the effectiveness of **centralized** and **decentralized** federated learning paradigms, simulating vehicle-to-vehicle communication for model updates.
+This project investigates the application of **federated learning** (FL) to autonomous driving systems, comparing the **centralized** and **decentralized** FL architectures. The primary objective is to collaboratively train neural networks across edge devices (vehicles) to predict steering angles from video data while ensuring data privacy and scalability.
 
-Key aspects include:
-- Implementation of multiple **neural network architectures**, such as **dual-stream CNNs** and **temporal transformers**.
-- Flexible configurations using a **ModelConfig** class to switch between various output formats (e.g., `angle`, `sin_cos`) and loss functions.
-- Robust handling of spatial and temporal data using **frame sequences** and **optical flow**.
-- Simulation of dynamic peer-to-peer communication for decentralized learning.
+### **Goals**
+1. Train autonomous vehicle models to predict steering angles effectively using video frames and optical flow.
+2. Explore the impact of **different output representations**:
+   - Steering angle in degrees.
+   - Normalized angle representations.
+   - Sin and cos of steering angles.
+3. Compare the performance of **centralized FL** and **decentralized FL** in terms of:
+   - Test accuracy.
+   - Training efficiency.
+   - Scalability.
 
 ---
 
 ## **Features**
 
-1. **Model Architectures**:
-   - **Dual-Stream CNN**: Processes spatial (frame stream) and temporal (optical flow) information.
-   - **Spatio-Temporal CNN**: Incorporates 3D convolutions for spatio-temporal processing.
-   - **Temporal Transformer**: Uses transformers to process temporal sequences for steering angle prediction.
+1. **Model Variants**:
+   - **Dual-Stream Model**: Processes frame and optical flow streams separately.
+   - **Spatio-Temporal Model**: Incorporates temporal relationships with 3D convolutions.
+   - **Temporal Transformer Model**: Utilizes transformer layers to capture temporal dependencies.
 
-2. **Federated Learning Approaches**:
-   - **Centralized**: A global server aggregates model updates from all workers.
-   - **Decentralized**: Vehicles dynamically select peers for weight aggregation.
+2. **Dynamic Output Handling**:
+   - Models support multiple output types:
+     - `angle`: Steering angle in degrees.
+     - `angle_norm_tanh`: Normalized angle using `tanh`.
+     - `angle_norm_clamped`: Scaled and clamped to the range [-1, 1].
+     - `sin_cos`: Predicts `sin` and `cos` components of angles.
 
-3. **Dynamic Output Configurations**:
-   - Predict steering angles directly (`angle`).
-   - Predict normalized angles (`angle_norm`) for better training stability.
-   - Predict `sin` and `cos` of the angle (`sin_cos`) for circular loss handling.
+3. **Federated Learning**:
+   - **Centralized FL**: A central server aggregates model weights from vehicles.
+   - **Decentralized FL**: Vehicles directly exchange weights with dynamic peers.
 
-4. **Flexible Data Handling**:
-   - Seamlessly integrates frame sequences and optical flow.
-   - Dynamically prepares targets based on the selected output type.
+4. **Visualization Tools**:
+   - Generate videos overlaying predicted and ground truth steering angles.
+   - Analyze inference time to ensure real-time feasibility.
+
+5. **Worker Simulation**:
+   - Simulates edge devices (vehicles) by splitting datasets across workers.
+   - Supports dynamic peer selection for decentralized learning.
 
 ---
 
 ## **Project Structure**
 
 ```
-.
-├── LICENSE
-├── README.md
-├── build/                     # Contains trained model weights
-│   ├── base_model.pth
-│   └── tt_base_model.pth
-├── data/                      # Dataset-related files
-│   ├── base_model_training/   # Data for initial base model training
-│   ├── original_data.zip      # Original dataset archive
-│   └── training_data/         # Data distributed to workers
-├── logs/                      # Training logs for different scenarios
-├── models/                    # Model architectures and configuration
-│   ├── base_model.py
-│   ├── dual_stream.py
-│   ├── model_config.py
-│   ├── spatio_temporal.py
-│   └── temporal_transformer.py
-├── simulations/               # Centralized and decentralized FL simulations
-├── testing/                   # Testing and visualization scripts
-├── train_base_model.py        # Script to train the initial base model
-├── utils/                     # Helper functions for data processing and logging
-└── workers/                   # Worker implementation for federated learning
+Project/
+├── data/                      # Datasets for training and testing
+│   ├── base_model_training/   # Data for training the initial base model
+│   ├── training_data/         # Data for federated learning simulations
+├── models/                    # Neural network architectures
+│   ├── base_model.py          # Base class for models
+│   ├── dual_stream.py         # Dual-Stream Model
+│   ├── spatio_temporal.py     # Spatio-Temporal Model
+│   ├── temporal_transformer.py# Temporal Transformer Model
+│   ├── model_config.py        # Dynamic model configuration
+│   ├── registry.py            # Model registry for dynamic retrieval
+├── simulations/               # Federated learning simulation scripts
+│   ├── centralized.py         # Centralized FL simulation
+│   ├── decentralized.py       # Decentralized FL simulation
+├── utils/                     # Utility functions
+│   ├── aggregation.py         # Federated averaging logic
+│   ├── data_loader.py         # Dataset loader for video and optical flow
+│   ├── logging_utils.py       # Logging tools for metrics
+│   ├── optical_flow.py        # Optical flow computation utility
+│   ├── split_dataset.py       # Dataset splitting for workers
+│   ├── swap_data.py           # Random data swapping between workers
+├── workers/                   # Worker simulation code
+│   ├── worker.py              # Individual worker class for FL
+├── train_base_model.py        # Script for training the base model
+├── visualization/             # Visualization tools
+│   ├── model_performance_video.py # Generate video overlays for predictions
+└── README.md                  # Project documentation
 ```
 
 ---
 
-## **Getting Started**
+## **Training Workflow**
 
-### **Prerequisites**
-- Python 3.8+
-- PyTorch 2.0+
-- OpenCV for optical flow computation
-
-### **Dataset Structure**
-1. **Base Model Training Data** (`data/base_model_training/`):
-   - `data.txt` contains mappings: `IMGNAME OUTANGLE`
-     ```
-     X_1.jpg 15.3
-     X_2.jpg -7.8
-     ```
-2. **Worker Training Data** (`data/training_data/`):
-   - Similar to the base training data but distributed to workers.
-
----
-
-## **Workflow**
-
-### **1. Train the Base Model**
-Train a global model using the base dataset:
+### **1. Train Base Model**
+The base model is trained on the initial dataset using the desired output type and loss function. This serves as the foundation for federated learning.
 ```bash
 python train_base_model.py \
-    --model_type "temporal_transformer" \
+    --model_type "dual_stream" \
+    --output_type "sin_cos" \
     --data_folder "data/base_model_training/data/" \
     --data_file "data/base_model_training/data.txt" \
-    --save_path "build/base_model.pth" \
+    --save_dir "build/" \
     --epochs 10 \
     --batch_size 32 \
-    --lr 0.0001 \
+    --lr 0.001 \
     --device "cuda"
 ```
 
-### **2. Simulate Federated Learning**
-
-#### **Centralized**
-Simulate centralized federated learning:
+### **2. Centralized Federated Learning**
+Simulate centralized FL where a central server aggregates model weights from workers.
 ```bash
 python simulations/centralized.py \
+    --model_type "dual_stream" \
+    --output_type "sin_cos" \
     --data_folder "data/training_data/data/" \
     --data_file "data/training_data/data.txt" \
+    --save_dir "build/" \
     --num_workers 5 \
     --rounds 5 \
     --epochs_per_worker 3 \
-    --base_model_path "build/base_model.pth" \
+    --batch_size 8 \
+    --base_model_path "build/dual_stream-sin_cos-base_model.pth" \
     --device "cuda"
 ```
 
-#### **Decentralized**
-Simulate decentralized federated learning with dynamic neighbor selection:
+### **3. Decentralized Federated Learning**
+Simulate decentralized FL where workers exchange weights with dynamically selected peers.
 ```bash
 python simulations/decentralized.py \
+    --model_type "dual_stream" \
+    --output_type "sin_cos" \
     --data_folder "data/training_data/data/" \
     --data_file "data/training_data/data.txt" \
+    --save_dir "build/" \
     --num_workers 5 \
     --rounds 5 \
     --epochs_per_worker 3 \
-    --base_model_path "build/base_model.pth" \
+    --batch_size 8 \
+    --base_model_path "build/dual_stream-sin_cos-base_model.pth" \
+    --device "cuda"
+```
+
+### **4. Visualization**
+Generate videos to compare ground truth and predicted steering angles.
+```bash
+python visualization/model_performance_video.py \
+    --model_path "build/dual_stream-sin_cos-base_model.pth" \
+    --model_type "dual_stream" \
+    --output_type "sin_cos" \
+    --data_folder "data/training_data/data/" \
+    --data_file "data/training_data/data.txt" \
+    --subset_fraction 0.02 \
+    --output_dir "visualizations/" \
+    --fps 30 \
     --device "cuda"
 ```
 
@@ -130,45 +149,47 @@ python simulations/decentralized.py \
 
 ## **Key Components**
 
-### **1. Dynamic Model Configurations**
-The `ModelConfig` class allows for easy switching between model types and output formats:
-- Output types: `angle`, `angle_norm`, `sin_cos`
-- Loss functions: `mse_loss`, `circular_loss`
+### **Models**
+- **Dual-Stream Model**: Separately processes RGB frames and optical flow using convolutional layers.
+- **Spatio-Temporal Model**: Combines spatial and temporal information with 3D convolutions.
+- **Temporal Transformer Model**: Leverages transformer layers for temporal attention.
 
-### **2. Federated Learning Framework**
-- **Centralized**: Workers send weights to a server for aggregation.
-- **Decentralized**: Workers dynamically exchange weights with peers.
+### **Dynamic Output Representation**
+- `angle`: Steering angle in degrees.
+- `angle_norm_tanh`: Normalized angle using `tanh`.
+- `angle_norm_clamped`: Scaled and clamped to [-1, 1].
+- `sin_cos`: Predicts sine and cosine of angles for better gradient behavior.
 
-### **3. Dynamic Neighbor Selection**
-- Each round, workers randomly select 2-4 peers for weight aggregation.
+### **Federated Learning**
+1. **Centralized FL**:
+   - Server aggregates weights from all workers.
+   - Simple but requires consistent connectivity to a central server.
+2. **Decentralized FL**:
+   - Workers exchange weights with peers.
+   - More robust to network failures.
 
----
-
-## **Visualization**
-
-Generate a video comparing model predictions to ground truth steering angles:
-```bash
-python testing/model_performance_video.py \
-    --model_path "build/tt_base_model.pth" \
-    --model_type "temporal_transformer" \
-    --data_folder "data/training_data/data/" \
-    --data_file "data/training_data/data.txt" \
-    --subset_fraction 0.02 \
-    --output_video "performance_video.mp4" \
-    --device "cuda"
-```
+### **Visualization**
+- Draws overlaid steering wheels to compare predictions against ground truth.
+- Computes inference time to ensure real-time suitability.
 
 ---
 
-## **Future Directions**
-- Use real-world driving data for validation.
-- Implement alternative aggregation strategies for decentralized learning.
-- Explore lightweight neural architectures for real-time inference.
+## **Results**
+1. **Performance**:
+   - Models trained with `sin_cos` output and circular loss performed best on average.
+   - Centralized FL converged faster but relied heavily on server availability.
+   - Decentralized FL showed robustness to network disruptions.
+
+2. **Inference**:
+   - All models achieved inference times suitable for real-time deployment (FPS > 30).
 
 ---
 
-## **Acknowledgments**
-This project leverages **PyTorch** for neural network training and **OpenCV** for optical flow computation. Inspired by federated learning research in autonomous driving.
+## **Future Work**
+- Incorporate real-world datasets for better generalization.
+- Train the models in a simulated test environment.
+- Explore additional neural architectures (e.g., Vision Transformers).
+- Optimize decentralized weight-sharing protocols for scalability.
 
 ---
 

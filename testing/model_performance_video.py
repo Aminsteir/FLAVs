@@ -1,10 +1,11 @@
+import os
+import time
 import torch
 import argparse
 import cv2
 from models.model_config import ModelConfig
 import numpy as np
 from utils.data_loader import AutonomousVehicleDataset
-
 
 def draw_steering_wheel(image, ground_truth_angle, predicted_angle):
     """
@@ -29,32 +30,33 @@ def draw_steering_wheel(image, ground_truth_angle, predicted_angle):
     center_pred = (width + 100, 2 * height // 3)  # Position of predicted wheel
     radius = 50
 
+    def angle_to_coordinates(center, radius, angle_deg):
+        """
+        Convert an angle in degrees to x, y coordinates for the line endpoint.
+        Adjust to make 0° point upwards (12 o'clock position).
+        """
+        angle_rad = np.deg2rad(-angle_deg)  # Flip the angle to correct direction
+        x = int(center[0] - radius * np.sin(angle_rad))  # Multiply x by -1 for correct direction
+        y = int(center[1] - radius * np.cos(angle_rad))  # Subtract to flip the y-axis
+        return x, y
+
     # Draw ground truth wheel
     cv2.circle(extended_image, center_gt, radius, (0, 255, 0), 2)  # Green circle
-    angle_gt_rad = np.deg2rad(ground_truth_angle)
-    end_point_gt = (
-        int(center_gt[0] + radius * np.cos(angle_gt_rad)),
-        int(center_gt[1] - radius * np.sin(angle_gt_rad))
-    )
+    end_point_gt = angle_to_coordinates(center_gt, radius, ground_truth_angle)
     cv2.line(extended_image, center_gt, end_point_gt, (0, 255, 0), 2)
     cv2.putText(extended_image, f"GT: {ground_truth_angle:.2f}", (center_gt[0] - 50, center_gt[1] - 60),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
     # Draw predicted wheel
     cv2.circle(extended_image, center_pred, radius, (0, 0, 255), 2)  # Red circle
-    angle_pred_rad = np.deg2rad(predicted_angle)
-    end_point_pred = (
-        int(center_pred[0] + radius * np.cos(angle_pred_rad)),
-        int(center_pred[1] - radius * np.sin(angle_pred_rad))
-    )
+    end_point_pred = angle_to_coordinates(center_pred, radius, predicted_angle)
     cv2.line(extended_image, center_pred, end_point_pred, (0, 0, 255), 2)
     cv2.putText(extended_image, f"Pred: {predicted_angle:.2f}", (center_pred[0] - 50, center_pred[1] - 60),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
     return extended_image
 
-
-def create_visualization_video(model, dataset, output_video_path, model_config, fps=30, device="cpu"):
+def create_visualization_video(model, dataset, output_video_path, model_config, fps=30.0, device="cpu"):
     """
     Create a video visualizing model predictions vs ground truth.
 
@@ -74,6 +76,9 @@ def create_visualization_video(model, dataset, output_video_path, model_config, 
     extended_width = frame_width + 200  # Space for overlay
     video_writer = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps,
                                    (extended_width, frame_height))
+    
+    inference_times = []  # Track inference times
+    frame_count = 0
 
     for item in dataset:
         *inputs, target = item  # Extract inputs and ground truth
@@ -92,10 +97,16 @@ def create_visualization_video(model, dataset, output_video_path, model_config, 
         # Add batch dimension and move inputs to the correct device
         inputs = [inp.unsqueeze(0).to(device) for inp in inputs]
 
-        # Perform model inference
+        # Perform model inference and measure time
+        start_time = time.time()
         with torch.no_grad():
             outputs = model(*inputs)
             predicted_angle = model_config.convert_output_to_angle(outputs.squeeze(0))
+        end_time = time.time()
+
+        # Record inference time
+        inference_times.append(end_time - start_time)
+        frame_count += 1
 
         # Draw steering wheels for ground truth and prediction
         visual_frame = draw_steering_wheel(current_frame, ground_truth_angle, predicted_angle)
@@ -104,7 +115,15 @@ def create_visualization_video(model, dataset, output_video_path, model_config, 
         video_writer.write(visual_frame)
 
     video_writer.release()
+
+    # Calculate and print FPS statistics
+    total_time = sum(inference_times)
+    avg_time_per_frame = total_time / frame_count
+    avg_fps = 1 / avg_time_per_frame
+
     print(f"Video saved to {output_video_path}")
+    print(f"Inference Stats: Average Time per Frame: {avg_time_per_frame:.4f} seconds")
+    print(f"Inference Stats: Average FPS: {avg_fps:.2f}")
 
 
 if __name__ == "__main__":
@@ -115,11 +134,13 @@ if __name__ == "__main__":
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the test dataset folder.")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the test dataset mapping file.")
     parser.add_argument("--subset_fraction", type=float, default=0.02, help="Fraction of dataset to record video.")
-    parser.add_argument("--output_video", type=str, required=True, help="Path to save the output video.")
-    parser.add_argument("--fps", type=int, default=30, help="FPS (frames per second) of output video")
+    parser.add_argument("--output_dir", type=str, required=True, help="Directory to save the output video.")
+    parser.add_argument("--fps", type=float, default=30.0, help="FPS (frames per second) of output video")
     parser.add_argument("--device", type=str, default="cuda", help="Device to use for inference ('cpu' or 'cuda').")
 
     args = parser.parse_args()
+
+    output_video_path = os.path.join(args.output_dir, f"{args.model_type}-{args.output_type}-driving_visualization.mp4")
 
     model_config = ModelConfig(
         model_type = args.model_type,
@@ -137,7 +158,7 @@ if __name__ == "__main__":
         model=model,
         model_config=model_config,
         dataset=dataset,
-        output_video_path=args.output_video,
+        output_video_path=output_video_path,
         fps=args.fps,
         device=args.device
     )
