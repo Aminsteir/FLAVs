@@ -73,10 +73,10 @@ def centralized_simulation(model_config: ModelConfig, data_folder, data_file, sa
 
         if (round_num + 1) % save_freq == 0: # Save worker model weights + global
             for worker in workers:
-                worker_save_path = os.path.join(save_dir, f"{model_config.model_type}_{model_config.output_type}_centralized_round_{round_num + 1}_worker_{worker.worker_id}.pth")
+                worker_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-centralized-round_{round_num + 1}-worker_{worker.worker_id}.pth")
                 worker.save_weights(worker_save_path)
             if (round_num + 1) < rounds: # Don't save global model if it is the final round -- will get saved anyways
-                global_save_path = os.path.join(save_dir, f"{model_config.model_type}_{model_config.output_type}_centralized_round_{round_num + 1}_global.pth")
+                global_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-centralized-round_{round_num + 1}-global.pth")
                 torch.save(global_model.state_dict(), global_save_path)
 
         for worker in workers:
@@ -100,7 +100,7 @@ def centralized_simulation(model_config: ModelConfig, data_folder, data_file, sa
     logger.close()
 
     # Save the final global model
-    global_save_path = os.path.join(save_dir, f"{model_config.model_type}_{model_config.output_type}_centralized_finished_global.pth")
+    global_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-centralized-finished-global.pth")
     torch.save(global_model.state_dict(), global_save_path)
     print(f"Final global model saved at: '{global_save_path}'.")
 

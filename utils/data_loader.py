@@ -1,6 +1,7 @@
 import os
 import random
 from torch.utils.data import Subset
+from models.model_config import ModelConfig
 from utils.optical_flow import compute_optical_flow
 import torch
 from torch.utils.data import Dataset
@@ -20,7 +21,7 @@ class AutonomousVehicleDataset(Dataset):
             image_size (tuple): Image size (height, width).
         """
         self.data_folder = data_folder
-        self.model_config = model_config
+        self.model_config: ModelConfig = model_config
         self.image_size = image_size
         self.data = []
         self.transform = transforms.Compose([

@@ -54,7 +54,7 @@ def draw_steering_wheel(image, ground_truth_angle, predicted_angle):
     return extended_image
 
 
-def create_visualization_video(model, dataset, output_video_path, model_config, device="cpu"):
+def create_visualization_video(model, dataset, output_video_path, model_config, fps=30, device="cpu"):
     """
     Create a video visualizing model predictions vs ground truth.
 
@@ -72,7 +72,7 @@ def create_visualization_video(model, dataset, output_video_path, model_config, 
     frame_width = 455
     frame_height = 256
     extended_width = frame_width + 200  # Space for overlay
-    video_writer = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), 30,
+    video_writer = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps,
                                    (extended_width, frame_height))
 
     for item in dataset:
@@ -116,6 +116,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_file", type=str, required=True, help="Path to the test dataset mapping file.")
     parser.add_argument("--subset_fraction", type=float, default=0.02, help="Fraction of dataset to record video.")
     parser.add_argument("--output_video", type=str, required=True, help="Path to save the output video.")
+    parser.add_argument("--fps", type=int, default=30, help="FPS (frames per second) of output video")
     parser.add_argument("--device", type=str, default="cuda", help="Device to use for inference ('cpu' or 'cuda').")
 
     args = parser.parse_args()
@@ -125,7 +126,7 @@ if __name__ == "__main__":
         output_type = args.output_type
     )
 
-    dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, args.model_type).sample_subset(args.subset_fraction)
+    dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, model_config).sample_subset(args.subset_fraction)
 
     # Load model
     model = model_config.get_model()
@@ -137,5 +138,6 @@ if __name__ == "__main__":
         model_config=model_config,
         dataset=dataset,
         output_video_path=args.output_video,
+        fps=args.fps,
         device=args.device
     )

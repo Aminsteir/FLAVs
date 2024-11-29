@@ -80,7 +80,7 @@ def decentralized_simulation(model_config, data_folder, data_file, save_dir, sav
 
         if (round_num + 1) % save_freq == 0 and (round_num + 1) < rounds: # Save worker model weights, don't if it's the last round
             for worker in workers:
-                worker_save_path = os.path.join(save_dir, f"{model_config.model_type}_{model_config.output_type}_decentralized_round_{round_num + 1}_worker_{worker.worker_id}.pth")
+                worker_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-decentralized-round_{round_num + 1}-worker_{worker.worker_id}.pth")
                 worker.save_weights(worker_save_path)
 
         # Randomly swap worker data -- simulate new environments
@@ -101,7 +101,7 @@ def decentralized_simulation(model_config, data_folder, data_file, save_dir, sav
 
     # Step 5: Save final models
     for worker in workers:
-        worker_save_path = os.path.join(save_dir, f"{model_config.model_type}_{model_config.output_type}_decentralized_finished_worker_{worker.worker_id}.pth")
+        worker_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-decentralized-finished-worker_{worker.worker_id}.pth")
         worker.save_weights(worker_save_path)
 
 if __name__ == "__main__":

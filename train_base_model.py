@@ -41,7 +41,7 @@ def train_base_model(model_config: ModelConfig, data_folder, data_file, save_pat
     print("Starting training...")
 
     # Initialize logger
-    logger = Logger(log_dir="logs", scenario=f"{model_config.model_type}_{model_config.output_type}_base_model")
+    logger = Logger(log_dir="logs", scenario=f"{model_config.model_type}-{model_config.output_type}-base_model")
 
     for epoch in range(epochs):
         model.train()
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         output_type=args.output_type
     )
 
-    save_path = os.path.join(args.save_dir, f"{args.model_type}_{args.output_type}_base_model.pth")
+    save_path = os.path.join(args.save_dir, f"{args.model_type}-{args.output_type}-base_model.pth")
 
     # Train the base model
     train_base_model(
