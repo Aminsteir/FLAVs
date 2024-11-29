@@ -60,7 +60,7 @@ class AutonomousVehicleDataset(Dataset):
 
         target = self.model_config.prepare_targets(current_item[1])
 
-        if self.model_type == "dual_stream":
+        if self.model_config.model_type == "dual_stream":
             # Compute optical flow for dual-stream model
             optical_flow_1 = compute_optical_flow(frames[0], frames[1])
             optical_flow_2 = compute_optical_flow(frames[1], frames[2])
@@ -69,8 +69,7 @@ class AutonomousVehicleDataset(Dataset):
             flow_input = torch.stack([optical_flow_1, optical_flow_2], dim=0)  # Shape: [2, H, W]
             return frame_input, flow_input, target
 
-        elif self.model_type in ["spatio_temporal", "temporal_transformer"]:
-            # Prepare frame sequences for 3D convolution model
+        elif self.model_config.model_type in ["spatio_temporal", "temporal_transformer"]:
             frame_input = torch.stack([self.transform(frame) for frame in frames], dim=0)  # Shape: [3, 3, H, W]
             return frame_input, target
 

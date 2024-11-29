@@ -1,4 +1,5 @@
 import argparse
+import os
 import torch
 from torch.utils.data import DataLoader
 from models.model_config import ModelConfig
@@ -94,15 +95,15 @@ if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Train Base Model")
     parser.add_argument("--model_type", type=str, default="dual_stream", help="Type of model to use")
-    parser.add_argument("--output_type", type=str, default="sin_cos", help="Model training output type")
+    parser.add_argument("--output_type", type=str, default="sin_cos", help="Model training output type (e.g., angle, angle_norm, sin_cos)")
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the dataset folder")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the file mapping images to output angles")
-    parser.add_argument("--save_path", type=str, default="base_model.pth", help="Path to save the trained model")
+    parser.add_argument("--save_dir", type=str, default="build/", help="Model output directory to save trained model")
     parser.add_argument("--split_ratio", type=float, default=0.7, help="Training/Test Split Ratio")
     parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate for optimization")
-    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use ('cpu' or 'cuda')")
+    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use ('cpu', 'cuda', 'mps')")
 
     args = parser.parse_args()
 
@@ -111,12 +112,14 @@ if __name__ == "__main__":
         output_type=args.output_type
     )
 
+    save_path = os.path.join(args.save_dir, f"{args.model_type}_{args.output_type}_base_model.pth")
+
     # Train the base model
     train_base_model(
         model_config=model_config,
         data_folder=args.data_folder,
         data_file=args.data_file,
-        save_path=args.save_path,
+        save_path=save_path,
         split_ratio=args.split_ratio,
         epochs=args.epochs,
         batch_size=args.batch_size,

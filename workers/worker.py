@@ -1,9 +1,6 @@
 import torch
 from torch.utils.data import DataLoader, random_split
-import torch.nn.functional as F
 from models.model_config import ModelConfig
-from models.registry import get_model
-from utils.loss import circular_loss
 
 class Worker:
     def __init__(self, model_config: ModelConfig, worker_id, dataset, base_model_path=None, split_ratio=0.8, batch_size=16, device='cpu'):
@@ -83,3 +80,7 @@ class Worker:
             new_weights (dict): New model state dictionary.
         """
         self.model.load_state_dict(new_weights)
+
+    def save_weights(self, save_path):
+        print(f"Saving worker model to {save_path}...")
+        torch.save(self.model.state_dict(), save_path)

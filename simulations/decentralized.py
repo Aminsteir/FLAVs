@@ -1,3 +1,4 @@
+import os
 import torch
 import argparse
 import random
@@ -10,7 +11,7 @@ from utils.data_loader import AutonomousVehicleDataset
 from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 
-def decentralized_simulation(model_config, data_folder, data_file, num_workers=5, rounds=5, epochs_per_worker=3, batch_size=8, base_model_path=None, device='cpu'):
+def decentralized_simulation(model_config, data_folder, data_file, save_dir, save_freq=5, num_workers=5, rounds=5, epochs_per_worker=3, batch_size=8, base_model_path=None, device='cpu'):
     """
     Simulate decentralized federated learning with dynamic neighbor selection.
 
@@ -18,6 +19,8 @@ def decentralized_simulation(model_config, data_folder, data_file, num_workers=5
         model_config (ModelConfig): Model configuration.
         data_folder (str): Path to the folder containing the dataset.
         data_file (str): Path to the file mapping images to output angles.
+        save_dir (str): Path to directory containing saved worker models.
+        save_freq (int): Frequency to save worker models.
         num_workers (int): Number of workers (edge devices).
         rounds (int): Number of decentralized training rounds.
         epochs_per_worker (int): Number of local epochs for each worker.
@@ -75,6 +78,11 @@ def decentralized_simulation(model_config, data_folder, data_file, num_workers=5
         for worker in workers:
             worker.update_weights(updated_weights[worker.worker_id])
 
+        if (round_num + 1) % save_freq == 0 and (round_num + 1) < rounds: # Save worker model weights, don't if it's the last round
+            for worker in workers:
+                worker_save_path = os.path.join(save_dir, f"{model_config.model_type}_{model_config.output_type}_decentralized_round_{round_num + 1}_worker_{worker.worker_id}.pth")
+                worker.save_weights(worker_save_path)
+
         # Randomly swap worker data -- simulate new environments
         swap_worker_data(workers)
 
@@ -93,8 +101,8 @@ def decentralized_simulation(model_config, data_folder, data_file, num_workers=5
 
     # Step 5: Save final models
     for worker in workers:
-        torch.save(worker.model.state_dict(), f"decentralized_worker_{worker.worker_id}_model.pth")
-        print(f"Worker {worker.worker_id} model saved as 'decentralized_worker_{worker.worker_id}_model.pth'.")
+        worker_save_path = os.path.join(save_dir, f"{model_config.model_type}_{model_config.output_type}_decentralized_finished_worker_{worker.worker_id}.pth")
+        worker.save_weights(worker_save_path)
 
 if __name__ == "__main__":
     # Parse command-line arguments
@@ -103,6 +111,8 @@ if __name__ == "__main__":
     parser.add_argument("--output_type", type=str, default="sin_cos", help="Model output type (e.g., angle, angle_norm, sin_cos)")
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the dataset folder")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the file mapping images to output angles")
+    parser.add_argument("--save_dir", type=str, default="build/", help="Output directory for saving trained models")
+    parser.add_argument("--save_freq", type=int, default=5, help="Frequency to save worker models (e.g., 5 --> every 5 rounds)")
     parser.add_argument("--num_workers", type=int, default=5, help="Number of workers")
     parser.add_argument("--rounds", type=int, default=5, help="Number of federated learning rounds")
     parser.add_argument("--epochs_per_worker", type=int, default=3, help="Number of local epochs per worker")
@@ -122,6 +132,8 @@ if __name__ == "__main__":
         model_config=model_config,
         data_folder=args.data_folder,
         data_file=args.data_file,
+        save_dir=args.save_dir,
+        save_freq=args.save_freq,
         num_workers=args.num_workers,
         rounds=args.rounds,
         epochs_per_worker=args.epochs_per_worker,

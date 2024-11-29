@@ -2,7 +2,6 @@ import torch
 import argparse
 import cv2
 from models.model_config import ModelConfig
-from models.registry import get_model
 import numpy as np
 from utils.data_loader import AutonomousVehicleDataset
 
