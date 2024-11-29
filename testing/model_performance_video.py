@@ -1,6 +1,7 @@
 import torch
 import argparse
 import cv2
+from models.model_config import ModelConfig
 from models.registry import get_model
 import numpy as np
 from utils.data_loader import AutonomousVehicleDataset
@@ -54,7 +55,7 @@ def draw_steering_wheel(image, ground_truth_angle, predicted_angle):
     return extended_image
 
 
-def create_visualization_video(model, dataset, output_video_path, model_type, device="cpu"):
+def create_visualization_video(model, dataset, output_video_path, model_config, device="cpu"):
     """
     Create a video visualizing model predictions vs ground truth.
 
@@ -62,7 +63,7 @@ def create_visualization_video(model, dataset, output_video_path, model_type, de
         model (nn.Module): Trained model.
         dataset (Dataset): Dataset for the video.
         output_video_path (str): Path to save the output video.
-        model_type (str): Type of model (e.g., "dual_stream", "spatio_temporal").
+        model_config (ModelConfig): Model configuration used during training.
         device (str): Device to run the model on ("cpu" or "cuda").
     """
     model.eval()
@@ -72,31 +73,22 @@ def create_visualization_video(model, dataset, output_video_path, model_type, de
     frame_width = 455
     frame_height = 256
     extended_width = frame_width + 200  # Space for overlay
-    video_writer = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), 20,
+    video_writer = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'mp4v'), 30,
                                    (extended_width, frame_height))
 
     for item in dataset:
         *inputs, target = item  # Extract inputs and ground truth
-        sin_gt, cos_gt = target[0], target[1]
         frames = inputs[0]  # First input (frame stream)
 
-        # Convert ground truth to angle
-        ground_truth_angle = np.rad2deg(np.arctan2(sin_gt, cos_gt))
+        ground_truth_angle = model_config.convert_output_to_angle(target)
 
-        # Prepare inputs dynamically based on model type
-        if model_type == "dual_stream":
-            reshaped_frames = frames.view(3, 3, 256, 455)  # 3 frames, 3 channels
-            current_frame = reshaped_frames[-1].cpu().numpy().transpose(1, 2, 0)  # Extract last frame
-            current_frame = (current_frame + 1.0) * 127.5  # Rescale [-1, 1] to [0, 255]
-            current_frame = np.clip(current_frame, 0, 255).astype(np.uint8)
-            current_frame = cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR)
-        elif model_type in ["spatio_temporal", "temporal_transformer"]:
-            current_frame = frames[-1].cpu().numpy().transpose(1, 2, 0)  # Convert to H x W x C
-            current_frame = (current_frame + 1.0) * 127.5
-            current_frame = np.clip(current_frame, 0, 255).astype(np.uint8)
-            current_frame = cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR)
-        else:
-            raise ValueError(f"Unsupported model type: {model_type}")
+        if model_config.model_type == "dual_stream":
+            frames = frames.view(3, 3, 256, 455)  # 3 frames, 3 channels
+
+        current_frame = frames[-1].cpu().numpy().transpose(1, 2, 0)  # Convert to H x W x C
+        current_frame = (current_frame + 1.0) * 127.5
+        current_frame = np.clip(current_frame, 0, 255).astype(np.uint8)
+        current_frame = cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR)
 
         # Add batch dimension and move inputs to the correct device
         inputs = [inp.unsqueeze(0).to(device) for inp in inputs]
@@ -104,10 +96,7 @@ def create_visualization_video(model, dataset, output_video_path, model_type, de
         # Perform model inference
         with torch.no_grad():
             outputs = model(*inputs)
-            sin_pred, cos_pred = outputs.squeeze(0).cpu().numpy()
-
-        # Convert prediction to angle
-        predicted_angle = np.rad2deg(np.arctan2(sin_pred, cos_pred))
+            predicted_angle = model_config.convert_output_to_angle(outputs.squeeze(0))
 
         # Draw steering wheels for ground truth and prediction
         visual_frame = draw_steering_wheel(current_frame, ground_truth_angle, predicted_angle)
@@ -122,7 +111,8 @@ def create_visualization_video(model, dataset, output_video_path, model_type, de
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a visualization video for model predictions.")
     parser.add_argument("--model_path", type=str, required=True, help="Path to the trained model file.")
-    parser.add_argument("--model_type", type=str, required=True, help="Type of model to load (e.g., dual_stream, spatio_temporal).")
+    parser.add_argument("--model_type", type=str, required=True, help="Model architecture to load (e.g., temporal_transformer).")
+    parser.add_argument("--output_type", type=str, required=True, help="Trained model output type (e.g., angle, angle_norm, sin_cos)")
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the test dataset folder.")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the test dataset mapping file.")
     parser.add_argument("--subset_fraction", type=float, default=0.02, help="Fraction of dataset to record video.")
@@ -131,16 +121,21 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    model_config = ModelConfig(
+        model_type = args.model_type,
+        output_type = args.output_type
+    )
+
     dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, args.model_type).sample_subset(args.subset_fraction)
 
     # Load model
-    model = get_model(args.model_type)
+    model = model_config.get_model()
     model.load_state_dict(torch.load(args.model_path, map_location=args.device))
 
     # Create the video
     create_visualization_video(
         model=model,
-        model_type=args.model_type,
+        model_config=model_config,
         dataset=dataset,
         output_video_path=args.output_video,
         device=args.device

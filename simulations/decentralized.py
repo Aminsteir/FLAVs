@@ -2,6 +2,7 @@ import torch
 import argparse
 import random
 from models.dual_stream import DualStreamModel
+from models.model_config import ModelConfig
 from utils.logging_utils import Logger
 from utils.swap_data import swap_worker_data
 from workers.worker import Worker
@@ -9,12 +10,12 @@ from utils.data_loader import AutonomousVehicleDataset
 from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 
-def decentralized_simulation(model_type, data_folder, data_file, num_workers=5, rounds=5, epochs_per_worker=3, batch_size=8, base_model_path=None, device='cpu'):
+def decentralized_simulation(model_config, data_folder, data_file, num_workers=5, rounds=5, epochs_per_worker=3, batch_size=8, base_model_path=None, device='cpu'):
     """
     Simulate decentralized federated learning with dynamic neighbor selection.
 
     Args:
-        model_type (str): Type of model to train.
+        model_config (ModelConfig): Model configuration.
         data_folder (str): Path to the folder containing the dataset.
         data_file (str): Path to the file mapping images to output angles.
         num_workers (int): Number of workers (edge devices).
@@ -24,14 +25,14 @@ def decentralized_simulation(model_type, data_folder, data_file, num_workers=5, 
         device (str): Device to run the simulation ('cpu' or 'cuda').
     """
     # Step 1: Load the dataset
-    dataset = AutonomousVehicleDataset(data_folder, data_file, model_type)
+    dataset = AutonomousVehicleDataset(data_folder, data_file, model_config)
 
     # Step 2: Split the dataset into equal parts for workers
     worker_datasets = split_dataset_for_workers(dataset, num_workers)
 
     # Step 3: Initialize workers with the pretrained base model
     workers = [
-        Worker(worker_id=i, model_type=model_type, dataset=worker_datasets[i], base_model_path=base_model_path, batch_size=batch_size, device=device)
+        Worker(worker_id=i, model_config=model_config, dataset=worker_datasets[i], base_model_path=base_model_path, batch_size=batch_size, device=device)
         for i in range(num_workers)
     ]
 
@@ -99,6 +100,7 @@ if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Decentralized Federated Learning Simulation")
     parser.add_argument("--model_type", type=str, default="dual_stream", help="Type of model to train")
+    parser.add_argument("--output_type", type=str, default="sin_cos", help="Model output type (e.g., angle, angle_norm, sin_cos)")
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the dataset folder")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the file mapping images to output angles")
     parser.add_argument("--num_workers", type=int, default=5, help="Number of workers")
@@ -110,8 +112,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    model_config = ModelConfig(
+        model_type=args.model_type,
+        output_type=args.output_type
+    )
+
     # Call the simulation function with parsed arguments
     decentralized_simulation(
+        model_config=model_config,
         data_folder=args.data_folder,
         data_file=args.data_file,
         num_workers=args.num_workers,

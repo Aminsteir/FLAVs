@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import cv2
+from models.base_model import BaseModel
 
-class DualStreamModel(nn.Module):
-    def __init__(self, input_channels=9, flow_channels=2, image_size=(256, 455)):
+class DualStreamModel(BaseModel):
+    def __init__(self, output_type="angle", input_channels=9, flow_channels=2, image_size=(256, 455), **kwargs):
         """
         Dual-Stream Convolutional Neural Network for autonomous driving.
 
@@ -13,7 +13,7 @@ class DualStreamModel(nn.Module):
             flow_channels (int): Number of channels in the optical flow stream input (default: 2 flows = 2 channels).
             image_size (tuple): Height and width of the input images.
         """
-        super(DualStreamModel, self).__init__()
+        super(DualStreamModel, self).__init__(output_type=output_type)
 
         # Frame stream (processes RGB frames)
         self.frame_conv1 = nn.Conv2d(input_channels, 12, kernel_size=3, stride=2, padding=1)
@@ -31,7 +31,7 @@ class DualStreamModel(nn.Module):
         # Fully connected layers
         self.fc1 = nn.Linear(24 * self.conv_output_size * 2, 256)  # Concatenate frame and flow streams
         self.fc2 = nn.Linear(256, 10)
-        self.output = nn.Linear(10, 2)  # Regression output for steering
+        self.output = nn.Linear(10, 2 if output_type == "sin_cos" else 1)
 
     def forward(self, frame_input, flow_input):
         """
@@ -63,10 +63,8 @@ class DualStreamModel(nn.Module):
         x = F.relu(self.fc1(combined))
         x = F.relu(self.fc2(x))
 
-        pred = self.output(x)
-
-        norm = pred / torch.linalg.norm(pred, ord=2, dim=1, keepdim=True)
-        return norm
+        output = self.output(x)
+        return self.format_output(output)
 
     def _calculate_conv_output(self, image_size):
         """

@@ -3,21 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 from torchvision.models import MobileNet_V3_Small_Weights
+from models.base_model import BaseModel
 
-class TemporalTransformer(nn.Module):
-    def __init__(self, frame_dim=1280, num_frames=3, num_heads=4, hidden_dim=256, ff_dim=512, num_layers=4):
-        """
-        Temporal Transformer model for spatial-temporal tasks.
-
-        Args:
-            frame_dim (int): Dimensionality of the CNN-extracted features.
-            num_frames (int): Number of frames in the temporal sequence.
-            num_heads (int): Number of attention heads in the Transformer.
-            hidden_dim (int): Hidden dimensionality for the Transformer.
-            ff_dim (int): Feed-forward network dimensionality in the Transformer.
-            num_layers (int): Number of Transformer encoder layers.
-        """
-        super(TemporalTransformer, self).__init__()
+class TemporalTransformer(BaseModel):
+    def __init__(self, output_type="angle", frame_dim=1280, num_frames=3, num_heads=4, hidden_dim=256, ff_dim=512, num_layers=4, **kwargs):
+        super(TemporalTransformer, self).__init__(output_type=output_type)
         
         # Lightweight CNN backbone for spatial feature extraction
         self.cnn_backbone = models.mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT).features
@@ -38,19 +28,10 @@ class TemporalTransformer(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(hidden_dim, 128),
             nn.ReLU(),
-            nn.Linear(128, 2)  # Predict sin(angle) and cos(angle)
+            nn.Linear(128, 2 if output_type == "sin_cos" else 1)
         )
 
     def forward(self, x):
-        """
-        Forward pass.
-
-        Args:
-            x (Tensor): Input tensor of shape [batch_size, num_frames, 3, height, width].
-
-        Returns:
-            Tensor: Predicted steering angles of shape [batch_size, 1].
-        """
         batch_size, num_frames, _, height, width = x.size()
 
         # Extract spatial features for each frame
@@ -69,7 +50,5 @@ class TemporalTransformer(nn.Module):
         temporal_features = temporal_features.mean(dim=0)  # Global average pooling over time
 
         # Prediction head
-        pred = self.fc(temporal_features)
-        
-        norm = pred / torch.linalg.norm(pred, ord=2, dim=1, keepdim=True)
-        return norm
+        output = self.fc(temporal_features)
+        return self.format_output(output)

@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from models.base_model import BaseModel
 
-class SpatioTemporalModel(nn.Module):
-    def __init__(self, image_size=(256, 455)):
-        super(SpatioTemporalModel, self).__init__()
+class SpatioTemporalModel(BaseModel):
+    def __init__(self, output_type="angle", image_size=(256, 455), **kwargs):
+        super(SpatioTemporalModel, self).__init__(output_type=output_type)
         self.spatial_temporal_conv = nn.Sequential(
             nn.Conv3d(3, 16, kernel_size=(3, 3, 3), stride=(1, 2, 2), padding=(1, 1, 1)),
             nn.ReLU(),
@@ -22,7 +23,7 @@ class SpatioTemporalModel(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(self.flattened_size, 256),
             nn.ReLU(),
-            nn.Linear(256, 2)  # Predict sin(angle) and cos(angle)
+            nn.Linear(256, 2 if output_type == "sin_cos" else 1)
         )
 
     def forward(self, x):
@@ -38,7 +39,5 @@ class SpatioTemporalModel(nn.Module):
         x = self.spatial_temporal_conv(x)
         x = x.view(x.size(0), -1)  # Flatten
 
-        pred = self.fc(x)
-
-        norm = pred / torch.linalg.norm(pred, ord=2, dim=1, keepdim=True)
-        return norm
+        output = self.fc(x)
+        return self.format_output(output)

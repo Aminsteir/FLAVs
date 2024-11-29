@@ -1,5 +1,6 @@
 import torch
 from models.dual_stream import DualStreamModel
+from models.model_config import ModelConfig
 from utils.logging_utils import Logger
 from workers.worker import Worker
 from utils.data_loader import AutonomousVehicleDataset
@@ -8,12 +9,12 @@ from utils.aggregation import federated_average
 from utils.swap_data import swap_worker_data
 import argparse
 
-def centralized_simulation(model_type, data_folder, data_file, num_workers=10, rounds=4, epochs_per_worker=1, lr=0.00001, subset_ratio=0.2, batch_size=8, base_model_path=None, device='cpu'):
+def centralized_simulation(model_config: ModelConfig, data_folder, data_file, num_workers=10, rounds=4, epochs_per_worker=1, lr=0.00001, subset_ratio=0.2, batch_size=8, base_model_path=None, device='cpu'):
     """
     Simulate centralized federated learning.
 
     Args:
-        model_type (str): Model type for training.
+        model_config (str): Model configuration for training.
         data_folder (str): Path to the folder containing the dataset.
         data_file (str): Path to the file mapping images to output angles.
         num_workers (int): Number of workers (edge devices).
@@ -25,19 +26,19 @@ def centralized_simulation(model_type, data_folder, data_file, num_workers=10, r
         device (str): Device to run the simulation ('cpu' or 'cuda').
     """
     # Load the dataset
-    dataset = AutonomousVehicleDataset(data_folder, data_file, model_type)
+    dataset = AutonomousVehicleDataset(data_folder, data_file, model_config)
 
     # Split the dataset into equal parts for workers
     worker_datasets = split_dataset_for_workers(dataset, num_workers)
 
     # Initialize workers with the pretrained base model
     workers = [
-        Worker(worker_id=i, model_type=model_type, dataset=worker_datasets[i], base_model_path=base_model_path, batch_size=batch_size, device=device)
+        Worker(worker_id=i, model_config=model_config, dataset=worker_datasets[i], base_model_path=base_model_path, batch_size=batch_size, device=device)
         for i in range(num_workers)
     ]
 
     # Initialize the global model
-    global_model = DualStreamModel().to(device)
+    global_model = model_config.get_model().to(device)
     if base_model_path:
         print(f"Loading global model from {base_model_path}")
         global_model.load_state_dict(torch.load(base_model_path, map_location=device))
@@ -88,24 +89,6 @@ def centralized_simulation(model_type, data_folder, data_file, num_workers=10, r
     # Save the final global model
     torch.save(global_model.state_dict(), "centralized_global_model.pth")
     print("Global model saved as 'centralized_global_model.pth'.")
-
-
-def evaluate_global_model(global_model, val_loader, device):
-    criterion = torch.nn.MSELoss()
-    global_model.eval()
-    test_loss = 0
-    with torch.no_grad():
-        for batch in val_loader:
-            *inputs, labels = batch
-            inputs = [inp.to(device) for inp in inputs]
-            labels = labels.to(device)
-
-            outputs = global_model(*inputs)
-            loss = criterion(outputs, labels)
-            test_loss += loss.item()
-
-    avg_val_loss = test_loss / len(val_loader)
-    return avg_val_loss  
 
 
 if __name__ == "__main__":

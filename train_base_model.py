@@ -1,20 +1,18 @@
 import argparse
 import torch
 from torch.utils.data import DataLoader
-from models.registry import get_model
+from models.model_config import ModelConfig
 from utils.data_loader import AutonomousVehicleDataset
 import torch.nn.functional as F
-
 from utils.logging_utils import Logger
-from utils.loss import circular_loss
 
 
-def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=0.7, epochs=10, batch_size=32, lr=0.001, device="cpu"):
+def train_base_model(model_config: ModelConfig, data_folder, data_file, save_path, split_ratio=0.7, epochs=10, batch_size=32, lr=0.001, device="cpu"):
     """
     Train the base model on the provided dataset.
 
     Args:
-        model (str): Model type for training.
+        model_config (ModelConfig): Model configuration settings for training.
         data_folder (str): Path to the folder containing the dataset.
         data_file (str): Path to the file mapping images to output angles.
         save_path (str): Path to save the trained base model.
@@ -25,7 +23,7 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
     """
     # Step 1: Load the dataset
     print("Loading dataset...")
-    dataset = AutonomousVehicleDataset(data_folder, data_file, model_type)
+    dataset = AutonomousVehicleDataset(data_folder, data_file, model_config)
 
     # Step 2: Split dataset into training and validation sets
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [split_ratio, 1 - split_ratio])
@@ -35,14 +33,14 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
 
     # Step 3: Initialize the model, optimizer, and loss function
     print("Initializing model...")
-    model = get_model(args.model_type).to(device)
+    model = model_config.get_model().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.6, 0.99), eps=1e-8)
 
     # Step 4: Training loop
     print("Starting training...")
 
     # Initialize logger
-    logger = Logger(log_dir="logs", scenario=f"{model_type}_base_model")
+    logger = Logger(log_dir="logs", scenario=f"{model_config.model_type}_{model_config.output_type}_base_model")
 
     for epoch in range(epochs):
         model.train()
@@ -50,12 +48,11 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
 
         for batch in train_loader:
             *inputs, targets = batch
-            inputs = [inp.to(device) for inp in inputs]
-            targets = targets.to(device)
+            inputs, targets = [inp.to(device) for inp in inputs], targets.to(device)
 
             optimizer.zero_grad()
             outputs = model(*inputs)
-            loss = circular_loss(outputs, targets)
+            loss = model_config.loss_function(outputs, targets) # Use dynamic loss function
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
@@ -72,11 +69,10 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
         with torch.no_grad():
             for batch in val_loader:
                 *inputs, targets = batch
-                inputs = [inp.to(device) for inp in inputs]
-                targets = targets.to(device)
+                inputs, targets = [inp.to(device) for inp in inputs], targets.to(device)
 
                 outputs = model(*inputs)
-                loss = circular_loss(outputs, targets)
+                loss = model_config.loss_function(outputs, targets)
                 val_loss += loss.item()
 
         avg_val_loss = val_loss / len(val_loader)
@@ -98,6 +94,7 @@ if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Train Base Model")
     parser.add_argument("--model_type", type=str, default="dual_stream", help="Type of model to use")
+    parser.add_argument("--output_type", type=str, default="sin_cos", help="Model training output type")
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the dataset folder")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the file mapping images to output angles")
     parser.add_argument("--save_path", type=str, default="base_model.pth", help="Path to save the trained model")
@@ -109,9 +106,14 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    model_config = ModelConfig(
+        model_type=args.model_type,
+        output_type=args.output_type
+    )
+
     # Train the base model
     train_base_model(
-        model_type = args.model_type,
+        model_config=model_config,
         data_folder=args.data_folder,
         data_file=args.data_file,
         save_path=args.save_path,

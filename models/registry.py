@@ -9,7 +9,7 @@ MODEL_REGISTRY = {
     "temporal_transformer": TemporalTransformer,
 }
 
-def get_model(model_type, **kwargs):
+def get_model(model_type, output_type="angle", **kwargs):
     """
     Retrieve the model class from the registry.
 
@@ -23,4 +23,4 @@ def get_model(model_type, **kwargs):
     if model_type not in MODEL_REGISTRY:
         raise ValueError(f"Model type '{model_type}' not found in registry. Available: {list(MODEL_REGISTRY.keys())}")
     
-    return MODEL_REGISTRY[model_type](**kwargs)
+    return MODEL_REGISTRY[model_type](output_type=output_type, **kwargs)
