@@ -175,10 +175,10 @@ python visualization/model_performance_video.py \
 ---
 
 ## **Results**
-1. **Performance**:
+<!-- 1. **Performance**:
    - Models trained with `sin_cos` output and circular loss performed best on average.
    - Centralized FL converged faster but relied heavily on server availability.
-   - Decentralized FL showed robustness to network disruptions.
+   - Decentralized FL showed robustness to network disruptions. -->
 
 2. **Inference**:
    - All models achieved inference times suitable for real-time deployment (FPS > 30).
