@@ -38,6 +38,6 @@ build/*
 dist/
 
 # Ignore specific visualization outputs
-visualization/outputs/*.png
-visualization/outputs/*.mp4
-visualization/outputs/*.jpg
+testing/outputs/*.png
+testing/outputs/*.mp4
+testing/outputs/*.jpg
