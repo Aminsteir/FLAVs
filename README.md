@@ -27,8 +27,7 @@ This project investigates the application of **federated learning** (FL) to auto
 2. **Dynamic Output Handling**:
    - Models support multiple output types:
      - `angle`: Steering angle in degrees.
-     - `angle_norm_tanh`: Normalized angle using `tanh`.
-     - `angle_norm_clamped`: Scaled and clamped to the range [-1, 1].
+     - `angle_norm`: Normalized angle using `tanh`.
      - `sin_cos`: Predicts `sin` and `cos` components of angles.
 
 3. **Federated Learning**:

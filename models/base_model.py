@@ -24,10 +24,8 @@ class BaseModel(nn.Module):
         """
         if self.output_type == "angle":
             return output.squeeze(-1)  # Single angle in degrees
-        elif self.output_type == "angle_norm_tanh":
-            return torch.tanh(output.squeeze(-1))  # Map to [-1, 1] by using tanh --> higher angle values (e.g., closer to 180 deg) are lot less likely and model may struggle
-        elif self.output_type == "angle_norm_clamped":
-            return torch.clamp(output.squeeze(-1) / 180, min=-1, max=1)  # Map to [-1, 1] --> scale and clamp
+        elif self.output_type == "angle_norm":
+            return torch.tanh(output.squeeze(-1))  # Map to [-1, 1]
         elif self.output_type == "sin_cos":
             norm = output / torch.linalg.norm(output, ord=2, dim=1, keepdim=True)  # Normalize to [sin, cos]
             return norm

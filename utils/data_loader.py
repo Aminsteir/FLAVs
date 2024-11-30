@@ -10,7 +10,7 @@ from PIL import Image
 import numpy as np
 
 class AutonomousVehicleDataset(Dataset):
-    def __init__(self, data_folder, data_file, model_config, image_size=(256, 455)):
+    def __init__(self, data_folder, data_file, model_config: ModelConfig, image_size=(256, 455)):
         """
         Dataset for loading images and preparing inputs based on model type.
 
@@ -21,7 +21,7 @@ class AutonomousVehicleDataset(Dataset):
             image_size (tuple): Image size (height, width).
         """
         self.data_folder = data_folder
-        self.model_config: ModelConfig = model_config
+        self.model_config = model_config
         self.image_size = image_size
         self.data = []
         self.transform = transforms.Compose([

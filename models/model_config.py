@@ -27,7 +27,7 @@ class ModelConfig:
         """
         if self.output_type == "sin_cos":
             return circular_loss
-        elif self.output_type in ["angle", "angle_norm_tanh", "angle_norm_clamped"]:
+        elif self.output_type in ["angle", "angle_norm"]:
             return torch.nn.MSELoss()
         else:
             raise ValueError(f"Unsupported output type: {self.output_type}")
@@ -56,7 +56,7 @@ class ModelConfig:
         """
         if self.output_type == "angle":
             return torch.tensor(angle, dtype=torch.float32)
-        elif self.output_type in ["angle_norm_tanh", "angle_norm_clamped"]:
+        elif self.output_type == "angle_norm":
             return torch.tensor(angle / 180, dtype=torch.float32)  # Normalize to [-1, 1]
         elif self.output_type == "sin_cos":
             angle_rad = np.deg2rad(angle)
@@ -76,7 +76,7 @@ class ModelConfig:
         """
         if self.output_type == "angle":
             return output.item()  # Already in degrees
-        elif self.output_type in ["angle_norm_tanh", "angle_norm_clamped"]:
+        elif self.output_type == "angle_norm":
             return output.item() * 180  # Convert from [-1, 1] to degrees
         elif self.output_type == "sin_cos":
             sin, cos = output[0].item(), output[1].item()
