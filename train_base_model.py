@@ -35,7 +35,7 @@ def train_base_model(model_config: ModelConfig, data_folder, data_file, save_pat
     print("Initializing model...")
     model = model_config.get_model().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=5, verbose=True)
+    scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=5)
 
     # Step 4: Training loop
     print("Starting training...")
@@ -59,6 +59,7 @@ def train_base_model(model_config: ModelConfig, data_folder, data_file, save_pat
             total_loss += loss.item()
 
         avg_train_loss = total_loss / len(train_loader)
+        
         print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {avg_train_loss:.4f}")
 
         # Log training loss
@@ -78,8 +79,10 @@ def train_base_model(model_config: ModelConfig, data_folder, data_file, save_pat
 
         avg_val_loss = val_loss / len(val_loader)
         scheduler.step(avg_val_loss)  # Update scheduler
-        
-        print(f"Epoch {epoch + 1}/{epochs}, Validation Loss: {avg_val_loss:.4f}")
+
+        # Log learning rate explicitly
+        current_lr = scheduler.optimizer.param_groups[0]["lr"]
+        print(f"Epoch {epoch + 1}/{epochs}, Validation Loss: {avg_val_loss:.4f}, Current Learning Rate: {current_lr:.6e}")
 
         # Log testing metrics
         logger.log(epoch=epoch + 1, mode="test", loss=avg_val_loss)
