@@ -4,9 +4,8 @@ import torch
 from torch.utils.data import DataLoader
 from models.model_config import ModelConfig
 from utils.data_loader import AutonomousVehicleDataset
-import torch.nn.functional as F
 from utils.logging_utils import Logger
-
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 def train_base_model(model_config: ModelConfig, data_folder, data_file, save_path, split_ratio=0.7, epochs=10, batch_size=32, lr=0.001, device="cpu"):
     """
@@ -35,7 +34,8 @@ def train_base_model(model_config: ModelConfig, data_folder, data_file, save_pat
     # Step 3: Initialize the model, optimizer, and loss function
     print("Initializing model...")
     model = model_config.get_model().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, betas=(0.6, 0.99), eps=1e-8)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=5, verbose=True)
 
     # Step 4: Training loop
     print("Starting training...")
@@ -77,6 +77,8 @@ def train_base_model(model_config: ModelConfig, data_folder, data_file, save_pat
                 val_loss += loss.item()
 
         avg_val_loss = val_loss / len(val_loader)
+        scheduler.step(avg_val_loss)  # Update scheduler
+        
         print(f"Epoch {epoch + 1}/{epochs}, Validation Loss: {avg_val_loss:.4f}")
 
         # Log testing metrics
