@@ -50,7 +50,7 @@ def main():
     epochs = 25
     batch_size = 32
     lr = 0.0001
-    device = "mps"
+    device = "cuda"
 
     # Ensure the save directory exists
     os.makedirs(save_dir, exist_ok=True)
