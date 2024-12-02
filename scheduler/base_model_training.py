@@ -45,9 +45,9 @@ def main():
     model_types = ["dual_stream", "spatio_temporal", "temporal_transformer"]
     output_types = ["angle", "angle_norm", "sin_cos"]
     memory_requirements = {
-        "dual_stream": 5000,
-        "spatio_temporal": 6500,
-        "temporal_transformer": 5000,
+        "dual_stream": 3700,
+        "spatio_temporal": 6200,
+        "temporal_transformer": 3700,
     }
     data_folder = "data/base_model_training/data/"
     data_file = "data/base_model_training/data.txt"
