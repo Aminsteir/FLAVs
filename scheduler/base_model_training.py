@@ -23,22 +23,23 @@ def run_training_job(model_type, data_folder, data_file, save_dir, epochs, batch
 
 def main():
     # Parameters for the training jobs
-    model_types = ["dual_stream", "spatio_temporal", "temporal_transformer"]
+    # models = {"dual_stream": 1024, "spatio_temporal": 512, "temporal_transformer": 256}
+    models = {"temporal_transformer": 256}
 
     data_folder = "data/base_model_training/data/"
     data_file = "data/base_model_training/data.txt"
     save_dir = "build/"
     epochs = 25
-    batch_size = 512
     lr = 4e-4
     device = "cuda"
 
     # Ensure save directory exists
     os.makedirs(save_dir, exist_ok=True)
 
-    for model_type in model_types:
+    for model in models:
+        batch_size = models[model]
         run_training_job(
-            model_type=model_type,
+            model_type=model,
             data_folder=data_folder,
             data_file=data_file,
             save_dir=save_dir,
