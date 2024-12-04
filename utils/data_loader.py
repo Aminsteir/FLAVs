@@ -29,11 +29,16 @@ class AutonomousVehicleDataset(Dataset):
                 self.data.append((filename, angle))
         
         if model_type == "dual_stream" and precompute_flow:
-            save_dir = f"{data_folder}/flow/"
-            os.makedirs(save_dir, exist_ok=True)
-            self._precompute_optical_flow(save_dir)
+            self.flow_save_dir = f"{data_folder}/flow/"
+            try:
+                # os.makedirs(save_dir, exist_ok=True)
+                os.makedirs(self.flow_save_dir)
+                self._precompute_optical_flow()
+            except OSError as e:
+                print("Folder exists for precomputed flow values. Using existing folder for training.")
+            
 
-    def _precompute_optical_flow(self, save_dir):
+    def _precompute_optical_flow(self):
         """Precompute and save optical flow maps for the entire dataset."""
         print("Precomputing optical flow maps...")
         for i in range(len(self.data)):  # Skip the last frame
@@ -46,7 +51,7 @@ class AutonomousVehicleDataset(Dataset):
             flow = compute_optical_flow(frame1, frame2)
 
             # Save optical flow map
-            flow_save_path = os.path.join(save_dir, f"flow_{i}.pt")
+            flow_save_path = os.path.join(self.flow_save_dir, f"flow_{i}.pt")
             torch.save(flow, flow_save_path)
             
     def __len__(self):
