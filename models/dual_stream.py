@@ -24,12 +24,9 @@ class DualStreamModel(nn.Module):
         self.flow_conv2 = nn.Conv2d(12, 24, kernel_size=3, stride=2, padding=1)
         self.flow_pool = nn.MaxPool2d(kernel_size=4, stride=2)
 
-        # Calculate the flattened feature size after convolution and pooling
-        self.conv_output_size = self._calculate_conv_output(image_size)
-
         # Fully connected layers
         self.fc = nn.Sequential(
-            nn.Linear(24 * self.conv_output_size * 2, 256),
+            nn.Linear(83328, 256),
             nn.ReLU(),
             nn.Dropout(p=0.2),
             nn.Linear(256, 64),
@@ -62,31 +59,13 @@ class DualStreamModel(nn.Module):
         flow = torch.flatten(flow, start_dim=1)
 
         # Debugging: Print the shapes of each stream
-        print(f"Frame stream output shape: {frame.shape}")
-        print(f"Flow stream output shape: {flow.shape}")
+        # print(f"Frame stream output shape: {frame.shape}")
+        # print(f"Flow stream output shape: {flow.shape}")
 
         # Concatenate the outputs of both streams
         combined = torch.cat((frame, flow), dim=1)
 
         # Debugging: Print the shape of the combined tensor
-        print(f"Combined feature shape: {combined.shape}")
+        # print(f"Combined feature shape: {combined.shape}")
 
         return self.fc(combined).squeeze(-1)
-
-    def _calculate_conv_output(self, image_size):
-        """
-        Helper function to calculate the size of the output after convolutions and pooling.
-
-        Args:
-            image_size (tuple): (height, width) of the input images.
-
-        Returns:
-            int: Flattened size of the convolutional output.
-        """
-        height, width = image_size
-        for _ in range(2):  # Two convolution layers
-            height = (height + 2 - 3) // 2 + 1  # Conv2d with kernel=3, stride=2, padding=1
-            width = (width + 2 - 3) // 2 + 1
-        height = (height - 4) // 2 + 1  # MaxPool2d with kernel=4, stride=2
-        width = (width - 4) // 2 + 1
-        return height * width

@@ -61,5 +61,9 @@ def compute_optical_flow(frame1, frame2, scale = 0.75):
     # Compute magnitude and normalize
     magnitude, _ = cv2.cartToPolar(flow[..., 0], flow[..., 1])
     normalized_flow = cv2.normalize(magnitude, None, 0, 1, cv2.NORM_MINMAX)
+
+    # Upscale to original size and return as a tensor
+    original_size = (frame1.size[0], frame1.size[1])
+    normalized_flow = cv2.resize(normalized_flow, original_size, interpolation=cv2.INTER_LINEAR)
     
     return torch.tensor(normalized_flow, dtype=torch.float32)
