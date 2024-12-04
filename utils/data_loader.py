@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import random
 from torch.utils.data import Subset
@@ -64,8 +64,17 @@ class AutonomousVehicleDataset(Dataset):
             tasks.append((frame1_path, frame2_path, flow_save_path))
 
         # Use ThreadPoolExecutor to parallelize the computation
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            executor.map(compute_and_save_flow, tasks)
+        futures = []
+        with ThreadPoolExecutor(max_workers=4) as executor:  # Adjust max_workers based on your CPU cores
+            for task in tasks:
+                futures.append(executor.submit(compute_and_save_flow, task))
+        
+            # Explicitly wait for all futures to complete
+            for future in as_completed(futures):
+                try:
+                    future.result()  # Raise any exceptions that occurred during execution
+                except Exception as e:
+                    print(f"Error occurred: {e}")
 
         print("Optical flow precomputation completed. Ready to start training.")
             
