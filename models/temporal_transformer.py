@@ -55,7 +55,7 @@ class TemporalTransformer(nn.Module):
         temporal_embeddings = self.embedding(frame_features) + self.positional_encoding  # Add positional encoding
 
         # Pass through Transformer
-        temporal_features = self.transformer(temporal_embeddings)
+        temporal_features = self.transformer(temporal_embeddings.permute(1, 0, 2))  # Shape: [num_frames, batch_size, hidden_dim]
         temporal_features = temporal_features.mean(dim=0)  # Global average pooling over time
 
         # Prediction head
