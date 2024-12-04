@@ -41,7 +41,7 @@ class AutonomousVehicleDataset(Dataset):
     def _precompute_optical_flow(self):
         """Precompute and save optical flow maps for the entire dataset."""
 
-        def _compute_and_save_flow(args):
+        def compute_and_save_flow(args):
             """Helper function to compute and save optical flow for a given pair of frames."""
             frame1_path, frame2_path, flow_save_path = args
 
@@ -64,8 +64,10 @@ class AutonomousVehicleDataset(Dataset):
             tasks.append((frame1_path, frame2_path, flow_save_path))
 
         # Use ThreadPoolExecutor to parallelize the computation
-        with ThreadPoolExecutor(max_workers=4) as executor:  # Adjust max_workers based on your CPU cores
-            executor.map(_compute_and_save_flow, tasks)
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            executor.map(compute_and_save_flow, tasks)
+
+        print("Optical flow precomputation completed. Ready to start training.")
             
     def __len__(self):
         return len(self.data)
