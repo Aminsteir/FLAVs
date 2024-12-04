@@ -9,9 +9,10 @@ from PIL import Image
 import numpy as np
 
 class AutonomousVehicleDataset(Dataset):
-    def __init__(self, data_folder, data_file, model_type, image_size=(256, 455)):
+    def __init__(self, data_folder, data_file, model_type, precompute_flow = True, image_size=(256, 455)):
         self.data_folder = data_folder
         self.model_type = model_type
+        self.precompute_flow = precompute_flow
         self.image_size = image_size
         self.data = []
         self.transform = transforms.Compose([
@@ -26,19 +27,28 @@ class AutonomousVehicleDataset(Dataset):
                 filename, angle = line.strip().split(",")[0].split()[:2]
                 angle = float(angle)
                 self.data.append((filename, angle))
+        
+        if model_type == "dual_stream" and precompute_flow:
+            save_dir = f"{data_folder}/flow/"
+            os.makedirs(save_dir, exist_ok=True)
+            self._precompute_optical_flow(save_dir)
 
-        # Compute all optical_flow frames prior
-        if model_type == "dual_stream":
-            self.optical_flow_frames = []
-            for index in range(len(self.data)):
-                frame_0 = os.path.join(self.data_folder, self.data[max(index - 1, 0)][0])
-                frame_1 = os.path.join(self.data_folder, self.data[index][0])
+    def _precompute_optical_flow(self, save_dir):
+        """Precompute and save optical flow maps for the entire dataset."""
+        print("Precomputing optical flow maps...")
+        for i in range(len(self.data)):  # Skip the last frame
+            frame1_path = os.path.join(self.data_folder, self.data[max(i - 1, 0)][0])
+            frame2_path = os.path.join(self.data_folder, self.data[i][0])
 
-                frame_0 = Image.open(frame_0).convert("RGB")
-                frame_1 = Image.open(frame_1).convert("RGB")
+            # Load frames and compute flow
+            frame1 = Image.open(frame1_path).convert("RGB")
+            frame2 = Image.open(frame2_path).convert("RGB")
+            flow = compute_optical_flow(frame1, frame2)
 
-                self.optical_flow_frames.insert(index, compute_optical_flow(frame_0, frame_1))
-
+            # Save optical flow map
+            flow_save_path = os.path.join(save_dir, f"flow_{i}.pt")
+            torch.save(flow, flow_save_path)
+            
     def __len__(self):
         return len(self.data)
 
@@ -65,13 +75,18 @@ class AutonomousVehicleDataset(Dataset):
 
         if self.model_type == "dual_stream":
             # Compute optical flow for dual-stream model
-            # optical_flow_1 = compute_optical_flow(frames[0], frames[1])
-            # optical_flow_2 = compute_optical_flow(frames[1], frames[2])
-            optical_flow_1 = self.optical_flow_frames[index - 1]
-            optical_flow_2 = self.optical_flow_frames[index]
+            if self.precompute_flow:
+                flow_input = [
+                    torch.load(os.path.join(self.flow_save_dir, f"flow_{max(index - 1, 0)}.pt")),
+                    torch.load(os.path.join(self.flow_save_dir, f"flow_{index}.pt"))
+                ]
+                flow_input = torch.stack(flow_input, dim=0)  # Shape: [2, H, W]
+            else:
+                optical_flow_1 = compute_optical_flow(frames[0], frames[1])
+                optical_flow_2 = compute_optical_flow(frames[1], frames[2])
+                flow_input = torch.stack([optical_flow_1, optical_flow_2], dim=0)  # Shape: [2, H, W]
 
             frame_input = torch.cat([self.transform(frame) for frame in frames], dim=0)  # Shape: [9, H, W]
-            flow_input = torch.stack([optical_flow_1, optical_flow_2], dim=0)  # Shape: [2, H, W]
             return frame_input, flow_input, target
 
         elif self.model_type in ["spatio_temporal"]:
