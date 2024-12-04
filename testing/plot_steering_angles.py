@@ -46,6 +46,7 @@ def plot_steering_angles(model, dataset, output_plot_path, model_type, device="c
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plot ground truth vs predicted steering angles.")
     parser.add_argument("--model_path", type=str, required=True, help="Path to the trained model file.")
+    parser.add_argument("--model_type", type=str, required=True, help="Type of model to plot.")
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the test dataset folder.")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the test dataset mapping file.")
     parser.add_argument("--subset_fraction", type=float, default=0.02, help="Fraction of dataset to use")

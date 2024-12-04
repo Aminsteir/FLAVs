@@ -24,9 +24,9 @@ def run_training_job(model_type, data_folder, data_file, save_dir, epochs, batch
 def main():
     # Parameters for the training jobs
     models = {
-        "temporal_transformer": (128, 4e-5), 
-        "spatio_temporal": (128, 4e-4), 
-        "dual_stream": (512, 3.2e-3), 
+        "temporal_transformer": (32, 5e-5), 
+        "spatio_temporal": (32, 5e-5), 
+        "dual_stream": (32, 1e-4), 
     }
 
     data_folder = "data/base_model_training/data/"

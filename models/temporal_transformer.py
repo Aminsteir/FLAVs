@@ -19,16 +19,26 @@ class TemporalTransformer(nn.Module):
 
         # Temporal Transformer
         self.embedding = nn.Linear(frame_dim, hidden_dim)
-        self.positional_encoding = nn.Parameter(torch.zeros(1, num_frames, hidden_dim))
+        self.positional_encoding = nn.Parameter(self.sinusoidal_encoding(num_frames, hidden_dim), requires_grad=False)
         encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_dim, nhead=num_heads, dim_feedforward=ff_dim, batch_first=True)
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
         # Fully connected head
         self.fc = nn.Sequential(
-            nn.Linear(hidden_dim, 128),
+            nn.Linear(hidden_dim, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
             nn.ReLU(),
             nn.Linear(128, 1)
         )
+
+    def sinusoidal_encoding(self, num_frames, hidden_dim):
+        position = torch.arange(0, num_frames).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, hidden_dim, 2) * -(torch.log(torch.tensor(10000.0)) / hidden_dim))
+        encoding = torch.zeros(num_frames, hidden_dim)
+        encoding[:, 0::2] = torch.sin(position * div_term)
+        encoding[:, 1::2] = torch.cos(position * div_term)
+        return encoding.unsqueeze(0)
 
     def forward(self, x):
         batch_size, num_frames, _, height, width = x.size()
@@ -45,7 +55,7 @@ class TemporalTransformer(nn.Module):
         temporal_embeddings = self.embedding(frame_features) + self.positional_encoding  # Add positional encoding
 
         # Pass through Transformer
-        temporal_features = self.transformer(temporal_embeddings.permute(1, 0, 2))  # Shape: [num_frames, batch_size, hidden_dim]
+        temporal_features = self.transformer(temporal_embeddings)
         temporal_features = temporal_features.mean(dim=0)  # Global average pooling over time
 
         # Prediction head
