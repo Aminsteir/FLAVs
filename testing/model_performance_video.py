@@ -80,7 +80,7 @@ def create_visualization_video(model, dataset, output_video_path, model_type, fp
             frames = frames.view(3, 3, 256, 455)  # 3 frames, 3 channels
 
         current_frame = frames[-1].cpu().numpy().transpose(1, 2, 0)  # Convert to H x W x C
-        current_frame = current_frame * 255
+        current_frame = (current_frame + 1) * 127.5
         current_frame = np.clip(current_frame, 0, 255).astype(np.uint8)
         current_frame = cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR)
 

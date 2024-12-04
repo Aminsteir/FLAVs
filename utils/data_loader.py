@@ -17,6 +17,7 @@ class AutonomousVehicleDataset(Dataset):
         self.transform = transforms.Compose([
             transforms.Resize(image_size),
             transforms.ToTensor(),  # Convert frame to [0, 1]
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),  # Scale to [-1, 1]
         ])
         
         # Load data file (format: filename steering_angle)
