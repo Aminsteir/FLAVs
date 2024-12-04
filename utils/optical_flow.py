@@ -36,7 +36,7 @@ import torch
 #     normalized_flow = cv2.resize(normalized_flow, original_size, interpolation=cv2.INTER_LINEAR)
 #     return torch.tensor(normalized_flow, dtype=torch.float32)
 
-def compute_optical_flow(frame1, frame2, scale = 0.5):
+def compute_optical_flow(frame1, frame2):
     """
     Compute optical flow using SimpleFlow algorithm.
     
@@ -50,8 +50,8 @@ def compute_optical_flow(frame1, frame2, scale = 0.5):
     frame1_gray = cv2.cvtColor(np.array(frame1), cv2.COLOR_RGB2GRAY)
     frame2_gray = cv2.cvtColor(np.array(frame2), cv2.COLOR_RGB2GRAY)
 
-    frame1_gray = cv2.resize(frame1_gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-    frame2_gray = cv2.resize(frame2_gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    # frame1_gray = cv2.resize(frame1_gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    # frame2_gray = cv2.resize(frame2_gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
     
     # Compute optical flow using SimpleFlow
     flow = cv2.optflow.calcOpticalFlowSF(

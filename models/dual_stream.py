@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class DualStreamModel(nn.Module):
-    def __init__(self, **kwargs):
+    def __init__(self, image_size=(256, 455), **kwargs):
         """
         Dual-Stream Convolutional Neural Network for autonomous driving.
 
@@ -22,9 +22,12 @@ class DualStreamModel(nn.Module):
         self.flow_conv2 = nn.Conv2d(12, 24, kernel_size=3, stride=2, padding=1)
         self.flow_pool = nn.MaxPool2d(kernel_size=4, stride=2)
 
+        # Calculate feature size dynamically
+        self.feature_size = self._calculate_feature_size(image_size)
+
         # Fully connected layers
         self.fc = nn.Sequential(
-            nn.Linear(51384, 256),
+            nn.Linear(self.feature_size * 2, 256),
             nn.ReLU(),
             nn.Dropout(p=0.2),
             nn.Linear(256, 64),
@@ -32,7 +35,16 @@ class DualStreamModel(nn.Module):
             nn.Dropout(p=0.2),
             nn.Linear(64, 1)
         )
-
+        
+    def _calculate_feature_size(self, image_size):
+        height, width = image_size
+        for _ in range(2):
+            height = (height + 2 - 3) // 2 + 1
+            width = (width + 2 - 3) // 2 + 1
+        height = (height - 4) // 2 + 1
+        width = (width - 4) // 2 + 1
+        return height * width * 24
+    
     def forward(self, frame_input, flow_input):
         """
         Forward pass for the dual-stream model.
