@@ -26,7 +26,7 @@ def main():
     models = {
         "temporal_transformer": (32, 5e-5), 
         "spatio_temporal": (32, 5e-5), 
-        "dual_stream": (32, 1e-4), 
+        "dual_stream": (32, 5e-5), 
     }
 
     data_folder = "data/base_model_training/data/"
