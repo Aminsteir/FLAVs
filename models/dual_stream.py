@@ -62,7 +62,7 @@ class DualStreamModel(nn.Module):
         x = F.relu(self.fc1(combined))
         x = F.relu(self.fc2(x))
 
-        return self.output(x)
+        return self.output(x).squeeze(-1)
 
     def _calculate_conv_output(self, image_size):
         """

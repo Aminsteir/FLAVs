@@ -59,4 +59,4 @@ class TemporalTransformer(nn.Module):
         temporal_features = temporal_features.mean(dim=0)  # Global average pooling over time
 
         # Prediction head
-        return self.fc(temporal_features) * 180.0
+        return self.fc(temporal_features).squeeze(-1) * 180.0

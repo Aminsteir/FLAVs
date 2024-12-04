@@ -38,4 +38,4 @@ class SpatioTemporalModel(nn.Module):
         x = self.spatial_temporal_conv(x)
         x = x.view(x.size(0), -1)  # Flatten
 
-        return self.fc(x)
+        return self.fc(x).squeeze(-1)
