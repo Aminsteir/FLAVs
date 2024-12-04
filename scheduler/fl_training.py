@@ -55,11 +55,11 @@ def main():
     model_type = "temporal_transformer"
     base_model_path = "build/temporal_transformer-base_model.pth"
     save_freq = 5
-    num_workers = [4]
+    num_workers = [4, 8]
     rounds = 100
     epochs_per_worker = 2
     batch_size = 32
-    subset_ratio = 0.1
+    subset_ratio = 0.5
     lr = 1e-5
     device = "cuda"
 

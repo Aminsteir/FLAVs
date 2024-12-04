@@ -1,3 +1,4 @@
+import argparse
 import os
 import subprocess
 from itertools import product
@@ -21,27 +22,20 @@ def run_training_job(model_type, data_folder, data_file, save_dir, epochs, batch
     print(f"Running: {' '.join(command)}")
     subprocess.run(command)
 
-def main():
-    # Parameters for the training jobs
-    models = {
-        "temporal_transformer": (32, 5e-5), 
-        "spatio_temporal": (32, 5e-5), 
-        "dual_stream": (32, 5e-5), 
-    }
-
+def main(model_type):
     data_folder = "data/base_model_training/data/"
     data_file = "data/base_model_training/data.txt"
     save_dir = "build/"
-    epochs = 25
+    epochs = 30
+    batch_size = 64
+    lr = 2e-4
     device = "cuda"
 
     # Ensure save directory exists
     os.makedirs(save_dir, exist_ok=True)
 
-    for model in models:
-        batch_size, lr = models[model]
-        run_training_job(
-            model_type=model,
+    run_training_job(
+            model_type=model_type,
             data_folder=data_folder,
             data_file=data_file,
             save_dir=save_dir,
@@ -54,4 +48,10 @@ def main():
     print("All training jobs completed.")
 
 if __name__ == "__main__":
-    main()
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Train Base Model")
+    parser.add_argument("--model_type", type=str, default="dual_stream", help="Type of model to train")
+
+    args = parser.parse_args()
+
+    main(args.model_type)

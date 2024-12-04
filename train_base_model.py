@@ -21,7 +21,7 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
     # Step 3: Initialize the model, optimizer, and loss function
     print("Initializing model...")
     model = get_model(model_type).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-5)
     loss_fn = torch.nn.MSELoss()
 
     # Step 4: Training loop

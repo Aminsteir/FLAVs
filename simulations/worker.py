@@ -23,7 +23,7 @@ class Worker:
         self.test_loader = DataLoader(self.test_dataset, batch_size=batch_size, shuffle=False)
 
     def train(self, epochs=5, lr=1e-5, subset_ratio=0.25):
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, betas=(0.6, 0.99), eps=1e-8)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, betas=(0.6, 0.99), eps=1e-8, weight_decay=5e-5)
         self.model.train()
 
         # Sample a subset of the training data -- doesn't need to train on all the data available

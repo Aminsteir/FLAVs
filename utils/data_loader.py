@@ -27,6 +27,18 @@ class AutonomousVehicleDataset(Dataset):
                 angle = float(angle)
                 self.data.append((filename, angle))
 
+        # Compute all optical_flow frames prior
+        if model_type == "dual_stream":
+            self.optical_flow_frames = []
+            for index in range(len(self.data)):
+                frame_0 = os.path.join(self.data_folder, self.data[max(index - 1, 0)][0])
+                frame_1 = os.path.join(self.data_folder, self.data[index][0])
+
+                frame_0 = Image.open(frame_0).convert("RGB")
+                frame_1 = Image.open(frame_1).convert("RGB")
+
+                self.optical_flow_frames.insert(index, compute_optical_flow(frame_0, frame_1))
+
     def __len__(self):
         return len(self.data)
 
@@ -53,14 +65,16 @@ class AutonomousVehicleDataset(Dataset):
 
         if self.model_type == "dual_stream":
             # Compute optical flow for dual-stream model
-            optical_flow_1 = compute_optical_flow(frames[0], frames[1])
-            optical_flow_2 = compute_optical_flow(frames[1], frames[2])
+            # optical_flow_1 = compute_optical_flow(frames[0], frames[1])
+            # optical_flow_2 = compute_optical_flow(frames[1], frames[2])
+            optical_flow_1 = self.optical_flow_frames[index - 1]
+            optical_flow_2 = self.optical_flow_frames[index]
 
             frame_input = torch.cat([self.transform(frame) for frame in frames], dim=0)  # Shape: [9, H, W]
             flow_input = torch.stack([optical_flow_1, optical_flow_2], dim=0)  # Shape: [2, H, W]
             return frame_input, flow_input, target
 
-        elif self.model_type in ["spatio_temporal", "temporal_transformer"]:
+        elif self.model_type in ["spatio_temporal"]:
             frame_input = torch.stack([self.transform(frame) for frame in frames], dim=0)  # Shape: [3, 3, H, W]
             return frame_input, target
 

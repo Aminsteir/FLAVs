@@ -1,12 +1,10 @@
 from models.dual_stream import DualStreamModel
 from models.spatio_temporal import SpatioTemporalModel
-from models.temporal_transformer import TemporalTransformer
 
 # Registry of available models
 MODEL_REGISTRY = {
     "dual_stream": DualStreamModel,
     "spatio_temporal": SpatioTemporalModel,
-    "temporal_transformer": TemporalTransformer,
 }
 
 def get_model(model_type, **kwargs):

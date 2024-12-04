@@ -22,7 +22,11 @@ class SpatioTemporalModel(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(self.flattened_size, 256),
             nn.ReLU(),
-            nn.Linear(256, 1)
+            nn.Dropout(p=0.1),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Dropout(p=0.1),
+            nn.Linear(128, 1)
         )
 
     def forward(self, x):
