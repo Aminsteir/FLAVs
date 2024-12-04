@@ -9,7 +9,7 @@ from utils.data_loader import AutonomousVehicleDataset
 from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 
-def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_freq=5, num_workers=5, rounds=5, epochs_per_worker=3, batch_size=8, base_model_path=None, device='cpu'):
+def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_freq=5, num_workers=5, rounds=5, epochs_per_worker=3, lr=1e-5, subset_ratio=0.2, batch_size=8, base_model_path=None, device='cpu'):
     # Step 1: Load the dataset
     dataset = AutonomousVehicleDataset(data_folder, data_file, model_type)
 
@@ -43,7 +43,7 @@ def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_
         train_loss = 0
         for worker in workers:
             print(f"Worker {worker.worker_id} training...")
-            train_loss += worker.train(epochs=epochs_per_worker)
+            train_loss += worker.train(epochs=epochs_per_worker, lr=lr, subset_ratio=subset_ratio)
 
         avg_loss = train_loss / len(workers)
 
@@ -99,6 +99,8 @@ if __name__ == "__main__":
     parser.add_argument("--rounds", type=int, default=5, help="Number of federated learning rounds")
     parser.add_argument("--epochs_per_worker", type=int, default=3, help="Number of local epochs per worker")
     parser.add_argument("--batch_size", type=int, default=8, help="Batch size for training and validation")
+    parser.add_argument("--subset_ratio", type=float, default=0.1, help="Subset of training data to train each round")
+    parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate for training")
     parser.add_argument("--base_model_path", type=str, default=None, help="Path to the pretrained base model")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use ('cpu' or 'cuda')")
 
@@ -113,6 +115,8 @@ if __name__ == "__main__":
         save_freq=args.save_freq,
         num_workers=args.num_workers,
         rounds=args.rounds,
+        subset_ratio=args.subset_ratio,
+        lr=args.lr,
         epochs_per_worker=args.epochs_per_worker,
         base_model_path=args.base_model_path,
         device=args.device

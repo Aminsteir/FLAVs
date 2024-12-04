@@ -100,6 +100,8 @@ if __name__ == "__main__":
     parser.add_argument("--rounds", type=int, default=5, help="Number of federated learning rounds")
     parser.add_argument("--epochs_per_worker", type=int, default=3, help="Number of local epochs per worker")
     parser.add_argument("--batch_size", type=int, default=8, help="Batch size for training and validation")
+    parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate for training")
+    parser.add_argument("--subset_ratio", type=float, default=0.1, help="Fraction of training data to learn from each round")
     parser.add_argument("--base_model_path", type=str, default=None, help="Path to the pretrained base model")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use ('cpu' or 'cuda')")
 
@@ -116,6 +118,8 @@ if __name__ == "__main__":
         rounds=args.rounds,
         epochs_per_worker=args.epochs_per_worker,
         batch_size=args.batch_size,
+        subset_ratio=args.subset_ratio,
+        lr=args.lr,
         base_model_path=args.base_model_path,
         device=args.device
     )
