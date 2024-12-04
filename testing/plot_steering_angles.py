@@ -2,22 +2,12 @@ import os
 import torch
 import argparse
 import matplotlib.pyplot as plt
-from models.model_config import ModelConfig
+from models.registry import get_model
 from utils.data_loader import AutonomousVehicleDataset
 import numpy as np
 
 
-def plot_steering_angles(model, dataset, output_plot_path, model_config, device="cpu"):
-    """
-    Generate a plot comparing ground truth and predicted steering angles over timestamps.
-
-    Args:
-        model (nn.Module): Trained model.
-        dataset (Dataset): Dataset for evaluation.
-        output_plot_path (str): Path to save the output plot.
-        model_config (ModelConfig): Model configuration used during training.
-        device (str): Device to run the model on ("cpu" or "cuda").
-    """
+def plot_steering_angles(model, dataset, output_plot_path, model_type, device="cpu"):
     model.eval()
     model.to(device)
 
@@ -28,11 +18,11 @@ def plot_steering_angles(model, dataset, output_plot_path, model_config, device=
     for idx, item in enumerate(dataset):
         *inputs, target = item  # Extract inputs and ground truth
         inputs = [inp.unsqueeze(0).to(device) for inp in inputs]
-        ground_truth_angle = model_config.convert_output_to_angle(target)
+        ground_truth_angle = target.item()
 
         with torch.no_grad():
             outputs = model(*inputs)
-            predicted_angle = model_config.convert_output_to_angle(outputs.squeeze(0))
+            predicted_angle = outputs.squeeze(0).item()
 
         timestamps.append(idx)
         ground_truth_angles.append(ground_truth_angle)
@@ -57,8 +47,6 @@ def plot_steering_angles(model, dataset, output_plot_path, model_config, device=
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plot ground truth vs predicted steering angles.")
     parser.add_argument("--model_path", type=str, required=True, help="Path to the trained model file.")
-    parser.add_argument("--model_type", type=str, required=True, help="Model architecture to load (e.g., temporal_transformer).")
-    parser.add_argument("--output_type", type=str, required=True, help="Trained model output type (e.g., angle, angle_norm, sin_cos)")
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the test dataset folder.")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the test dataset mapping file.")
     parser.add_argument("--subset_fraction", type=float, default=0.02, help="Fraction of dataset to use")
@@ -67,15 +55,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    model_config = ModelConfig(
-        model_type=args.model_type,
-        output_type=args.output_type
-    )
-
-    dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, model_config).sample_subset(args.subset_fraction)
+    dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, args.model_type).sample_subset(args.subset_fraction)
 
     # Load model
-    model = model_config.get_model()
+    model = get_model(args.model_type)
     model.load_state_dict(torch.load(args.model_path, map_location=args.device))
 
     # Create the plot
@@ -83,6 +66,6 @@ if __name__ == "__main__":
         model=model,
         dataset=dataset,
         output_plot_path=args.output_plot,
-        model_config=model_config,
+        model_type=args.model_type,
         device=args.device
     )

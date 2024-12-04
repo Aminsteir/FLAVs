@@ -1,14 +1,16 @@
 import torch
 from torch.utils.data import DataLoader, random_split
-from models.model_config import ModelConfig
+
+from models.registry import get_model
 
 class Worker:
-    def __init__(self, model_config: ModelConfig, worker_id, dataset, base_model_path=None, split_ratio=0.8, batch_size=16, device='cpu'):
+    def __init__(self, model_type, worker_id, dataset, base_model_path=None, split_ratio=0.8, batch_size=16, device='cpu'):
         self.worker_id = worker_id
-        self.model_config = model_config
-        self.model = model_config.get_model().to(device)
+        self.model_type = model_type
+        self.model = get_model(model_type=model_type).to(device)
         self.device = device
         self.batch_size = batch_size
+        self.loss_fn = torch.nn.MSELoss()
 
         # Load pretrained base model if provided
         if base_model_path:
@@ -36,7 +38,7 @@ class Worker:
 
                 optimizer.zero_grad()
                 outputs = self.model(*inputs)
-                loss = self.model_config.loss_function(outputs, targets)
+                loss = self.loss_fn(outputs, targets)
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
@@ -55,7 +57,7 @@ class Worker:
                 inputs, targets = [inp.to(self.device) for inp in inputs], targets.to(self.device)
                 
                 outputs = self.model(*inputs)
-                loss = self.model_config.loss_function(outputs, targets)
+                loss = self.loss_fn(outputs, targets)
                 total_loss += loss.item()
 
         avg_loss = total_loss / len(self.test_loader)

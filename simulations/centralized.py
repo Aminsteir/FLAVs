@@ -1,47 +1,30 @@
 import os
 import torch
 from models.dual_stream import DualStreamModel
-from models.model_config import ModelConfig
+from models.registry import get_model
 from utils.logging_utils import Logger
-from workers.worker import Worker
+from simulations.worker import Worker
 from utils.data_loader import AutonomousVehicleDataset
 from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 from utils.swap_data import swap_worker_data
 import argparse
 
-def centralized_simulation(model_config: ModelConfig, data_folder, data_file, save_dir, save_freq=5, num_workers=10, rounds=4, epochs_per_worker=1, lr=0.00001, subset_ratio=0.2, batch_size=8, base_model_path=None, device='cpu'):
-    """
-    Simulate centralized federated learning.
-
-    Args:
-        model_config (str): Model configuration for training.
-        data_folder (str): Path to the folder containing the dataset.
-        data_file (str): Path to the file mapping images to output angles.
-        save_dir (str): Path to directory containing saved worker models.
-        save_freq (int): Frequency to save worker models.
-        num_workers (int): Number of workers (edge devices).
-        rounds (int): Number of federated learning rounds.
-        epochs_per_worker (int): Number of local epochs for each worker.
-        lr (float): The learning rate of the workers in the simulation.
-        subset_ratio (float): Each round, the fraction of the dataset the worker should train on.
-        base_model_path (str): Path to the pretrained base model file.
-        device (str): Device to run the simulation ('cpu' or 'cuda').
-    """
+def centralized_simulation(model_type, data_folder, data_file, save_dir, save_freq=5, num_workers=10, rounds=4, epochs_per_worker=1, lr=0.00001, subset_ratio=0.2, batch_size=8, base_model_path=None, device='cpu'):
     # Load the dataset
-    dataset = AutonomousVehicleDataset(data_folder, data_file, model_config)
+    dataset = AutonomousVehicleDataset(data_folder, data_file, model_type)
 
     # Split the dataset into equal parts for workers
     worker_datasets = split_dataset_for_workers(dataset, num_workers)
 
     # Initialize workers with the pretrained base model
     workers = [
-        Worker(worker_id=i, model_config=model_config, dataset=worker_datasets[i], base_model_path=base_model_path, batch_size=batch_size, device=device)
+        Worker(worker_id=i, model_type=model_type, dataset=worker_datasets[i], base_model_path=base_model_path, batch_size=batch_size, device=device)
         for i in range(num_workers)
     ]
 
     # Initialize the global model
-    global_model = model_config.get_model().to(device)
+    global_model = get_model(model_type).to(device)
     if base_model_path:
         print(f"Loading global model from {base_model_path}")
         global_model.load_state_dict(torch.load(base_model_path, map_location=device))
@@ -73,10 +56,10 @@ def centralized_simulation(model_config: ModelConfig, data_folder, data_file, sa
 
         if (round_num + 1) % save_freq == 0: # Save worker model weights + global
             for worker in workers:
-                worker_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-centralized-round_{round_num + 1}-worker_{worker.worker_id}.pth")
+                worker_save_path = os.path.join(save_dir, f"{model_type}-centralized-round_{round_num + 1}-worker_{worker.worker_id}.pth")
                 worker.save_weights(worker_save_path)
             if (round_num + 1) < rounds: # Don't save global model if it is the final round -- will get saved anyways
-                global_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-centralized-round_{round_num + 1}-global.pth")
+                global_save_path = os.path.join(save_dir, f"{model_type}-centralized-round_{round_num + 1}-global.pth")
                 torch.save(global_model.state_dict(), global_save_path)
 
         for worker in workers:
@@ -100,7 +83,7 @@ def centralized_simulation(model_config: ModelConfig, data_folder, data_file, sa
     logger.close()
 
     # Save the final global model
-    global_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-centralized-finished-global.pth")
+    global_save_path = os.path.join(save_dir, f"{model_type}-centralized-finished-global.pth")
     torch.save(global_model.state_dict(), global_save_path)
     print(f"Final global model saved at: '{global_save_path}'.")
 
@@ -124,6 +107,7 @@ if __name__ == "__main__":
 
     # Call the simulation function with parsed arguments
     centralized_simulation(
+        model_type=args.model_type,
         data_folder=args.data_folder,
         data_file=args.data_file,
         save_dir=args.save_dir,

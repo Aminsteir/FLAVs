@@ -3,11 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 from torchvision.models import MobileNet_V3_Small_Weights
-from models.base_model import BaseModel
 
-class TemporalTransformer(BaseModel):
-    def __init__(self, output_type="angle", frame_dim=1280, num_frames=3, num_heads=4, hidden_dim=256, ff_dim=512, num_layers=4, **kwargs):
-        super(TemporalTransformer, self).__init__(output_type=output_type)
+class TemporalTransformer(nn.Module):
+    def __init__(self, frame_dim=1280, num_frames=3, num_heads=4, hidden_dim=256, ff_dim=512, num_layers=4, **kwargs):
+        super(TemporalTransformer, self).__init__()
         
         # Lightweight CNN backbone for spatial feature extraction
         self.cnn_backbone = models.mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT).features
@@ -28,7 +27,7 @@ class TemporalTransformer(BaseModel):
         self.fc = nn.Sequential(
             nn.Linear(hidden_dim, 128),
             nn.ReLU(),
-            nn.Linear(128, 2 if output_type == "sin_cos" else 1)
+            nn.Linear(128, 1)
         )
 
     def forward(self, x):
@@ -50,5 +49,4 @@ class TemporalTransformer(BaseModel):
         temporal_features = temporal_features.mean(dim=0)  # Global average pooling over time
 
         # Prediction head
-        output = self.fc(temporal_features)
-        return self.format_output(output)
+        return self.fc(temporal_features)

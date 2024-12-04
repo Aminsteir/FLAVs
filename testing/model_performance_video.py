@@ -3,8 +3,8 @@ import time
 import torch
 import argparse
 import cv2
-from models.model_config import ModelConfig
 import numpy as np
+from models.registry import get_model
 from utils.data_loader import AutonomousVehicleDataset
 
 def draw_steering_wheel(image, ground_truth_angle, predicted_angle):
@@ -56,17 +56,7 @@ def draw_steering_wheel(image, ground_truth_angle, predicted_angle):
 
     return extended_image
 
-def create_visualization_video(model, dataset, output_video_path, model_config, fps=30.0, device="cpu"):
-    """
-    Create a video visualizing model predictions vs ground truth.
-
-    Args:
-        model (nn.Module): Trained model.
-        dataset (Dataset): Dataset for the video.
-        output_video_path (str): Path to save the output video.
-        model_config (ModelConfig): Model configuration used during training.
-        device (str): Device to run the model on ("cpu" or "cuda").
-    """
+def create_visualization_video(model, dataset, output_video_path, model_type, fps=30.0, device="cpu"):
     model.eval()
     model.to(device)
 
@@ -84,13 +74,13 @@ def create_visualization_video(model, dataset, output_video_path, model_config, 
         *inputs, target = item  # Extract inputs and ground truth
         frames = inputs[0]  # First input (frame stream)
 
-        ground_truth_angle = model_config.convert_output_to_angle(target)
+        ground_truth_angle = target.item()
 
-        if model_config.model_type == "dual_stream":
+        if model_type == "dual_stream":
             frames = frames.view(3, 3, 256, 455)  # 3 frames, 3 channels
 
         current_frame = frames[-1].cpu().numpy().transpose(1, 2, 0)  # Convert to H x W x C
-        current_frame = (current_frame + 1.0) * 127.5
+        current_frame = current_frame * 255
         current_frame = np.clip(current_frame, 0, 255).astype(np.uint8)
         current_frame = cv2.cvtColor(current_frame, cv2.COLOR_RGB2BGR)
 
@@ -101,7 +91,7 @@ def create_visualization_video(model, dataset, output_video_path, model_config, 
         start_time = time.time()
         with torch.no_grad():
             outputs = model(*inputs)
-            predicted_angle = model_config.convert_output_to_angle(outputs.squeeze(0))
+            predicted_angle = outputs.squeeze(0).item()
         end_time = time.time()
 
         # Record inference time
@@ -130,7 +120,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a visualization video for model predictions.")
     parser.add_argument("--model_path", type=str, required=True, help="Path to the trained model file.")
     parser.add_argument("--model_type", type=str, required=True, help="Model architecture to load (e.g., temporal_transformer).")
-    parser.add_argument("--output_type", type=str, required=True, help="Trained model output type (e.g., angle, angle_norm, sin_cos)")
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the test dataset folder.")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the test dataset mapping file.")
     parser.add_argument("--subset_fraction", type=float, default=0.02, help="Fraction of dataset to record video.")
@@ -140,60 +129,20 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    output_video_path = os.path.join(args.output_dir, f"{args.model_type}-{args.output_type}-driving_visualization.mp4")
+    output_video_path = os.path.join(args.output_dir, f"{args.model_type}-driving_visualization.mp4")
 
-    model_config = ModelConfig(
-        model_type = args.model_type,
-        output_type = args.output_type
-    )
-
-    dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, model_config).sample_subset(args.subset_fraction)
+    dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, args.model_type).sample_subset(args.subset_fraction)
 
     # Load model
-    model = model_config.get_model()
+    model = get_model(model_type=args.model_type)
     model.load_state_dict(torch.load(args.model_path, map_location=args.device))
 
     # Create the video
     create_visualization_video(
         model=model,
-        model_config=model_config,
+        model_type=args.model_type,
         dataset=dataset,
         output_video_path=output_video_path,
         fps=args.fps,
         device=args.device
     )
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(description="Create a visualization video for model predictions.")
-#     parser.add_argument("--data_folder", type=str, required=True, help="Path to the test dataset folder.")
-#     parser.add_argument("--data_file", type=str, required=True, help="Path to the test dataset mapping file.")
-#     parser.add_argument("--subset_fraction", type=float, default=0.02, help="Fraction of dataset to record video.")
-#     parser.add_argument("--output_dir", type=str, required=True, help="Directory to save the output video.")
-#     parser.add_argument("--fps", type=float, default=30.0, help="FPS (frames per second) of output video")
-#     parser.add_argument("--device", type=str, default="cuda", help="Device to use for inference ('cpu' or 'cuda').")
-
-#     args = parser.parse_args()
-
-#     models = [
-#         ["build/temporal_transformer-angle-base_model.pth", "temporal_transformer", "angle"],
-#         ["build/temporal_transformer-angle_norm-base_model.pth", "temporal_transformer", "angle_norm"],
-#         ["build/temporal_transformer-sin_cos-base_model.pth", "temporal_transformer", "sin_cos"],
-#     ]
-
-#     subset = AutonomousVehicleDataset(args.data_folder, args.data_file, None).sample_subset(args.subset_fraction)
-
-#     for model in models:
-#         model_path, model_type, output_type = model[0], model[1], model[2]
-#         config = ModelConfig(model_type=model_type, output_type=output_type)
-#         subset.dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, config)
-#         model = config.get_model()
-#         model.load_state_dict(torch.load(model_path, map_location=args.device))
-#         output_video_path = os.path.join(args.output_dir, f"{model_type}-{output_type}-driving_visualization.mp4")
-#         create_visualization_video(
-#             model=model,
-#             model_config=config,
-#             dataset=subset,
-#             output_video_path=output_video_path,
-#             fps=args.fps,
-#             device=args.device
-#         )

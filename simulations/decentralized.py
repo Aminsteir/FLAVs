@@ -2,40 +2,23 @@ import os
 import torch
 import argparse
 import random
-from models.dual_stream import DualStreamModel
-from models.model_config import ModelConfig
 from utils.logging_utils import Logger
 from utils.swap_data import swap_worker_data
-from workers.worker import Worker
+from simulations.worker import Worker
 from utils.data_loader import AutonomousVehicleDataset
 from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 
-def decentralized_simulation(model_config, data_folder, data_file, save_dir, save_freq=5, num_workers=5, rounds=5, epochs_per_worker=3, batch_size=8, base_model_path=None, device='cpu'):
-    """
-    Simulate decentralized federated learning with dynamic neighbor selection.
-
-    Args:
-        model_config (ModelConfig): Model configuration.
-        data_folder (str): Path to the folder containing the dataset.
-        data_file (str): Path to the file mapping images to output angles.
-        save_dir (str): Path to directory containing saved worker models.
-        save_freq (int): Frequency to save worker models.
-        num_workers (int): Number of workers (edge devices).
-        rounds (int): Number of decentralized training rounds.
-        epochs_per_worker (int): Number of local epochs for each worker.
-        base_model_path (str): Path to the pretrained base model file.
-        device (str): Device to run the simulation ('cpu' or 'cuda').
-    """
+def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_freq=5, num_workers=5, rounds=5, epochs_per_worker=3, batch_size=8, base_model_path=None, device='cpu'):
     # Step 1: Load the dataset
-    dataset = AutonomousVehicleDataset(data_folder, data_file, model_config)
+    dataset = AutonomousVehicleDataset(data_folder, data_file, model_type)
 
     # Step 2: Split the dataset into equal parts for workers
     worker_datasets = split_dataset_for_workers(dataset, num_workers)
 
     # Step 3: Initialize workers with the pretrained base model
     workers = [
-        Worker(worker_id=i, model_config=model_config, dataset=worker_datasets[i], base_model_path=base_model_path, batch_size=batch_size, device=device)
+        Worker(worker_id=i, model_type=model_type, dataset=worker_datasets[i], base_model_path=base_model_path, batch_size=batch_size, device=device)
         for i in range(num_workers)
     ]
 
@@ -80,7 +63,7 @@ def decentralized_simulation(model_config, data_folder, data_file, save_dir, sav
 
         if (round_num + 1) % save_freq == 0 and (round_num + 1) < rounds: # Save worker model weights, don't if it's the last round
             for worker in workers:
-                worker_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-decentralized-round_{round_num + 1}-worker_{worker.worker_id}.pth")
+                worker_save_path = os.path.join(save_dir, f"{model_type}-decentralized-round_{round_num + 1}-worker_{worker.worker_id}.pth")
                 worker.save_weights(worker_save_path)
 
         # Randomly swap worker data -- simulate new environments
@@ -101,14 +84,13 @@ def decentralized_simulation(model_config, data_folder, data_file, save_dir, sav
 
     # Step 5: Save final models
     for worker in workers:
-        worker_save_path = os.path.join(save_dir, f"{model_config.model_type}-{model_config.output_type}-decentralized-finished-worker_{worker.worker_id}.pth")
+        worker_save_path = os.path.join(save_dir, f"{model_type}-decentralized-finished-worker_{worker.worker_id}.pth")
         worker.save_weights(worker_save_path)
 
 if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Decentralized Federated Learning Simulation")
     parser.add_argument("--model_type", type=str, default="dual_stream", help="Type of model to train")
-    parser.add_argument("--output_type", type=str, default="sin_cos", help="Model output type (e.g., angle, angle_norm, sin_cos)")
     parser.add_argument("--data_folder", type=str, required=True, help="Path to the dataset folder")
     parser.add_argument("--data_file", type=str, required=True, help="Path to the file mapping images to output angles")
     parser.add_argument("--save_dir", type=str, default="build/", help="Output directory for saving trained models")
@@ -122,14 +104,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    model_config = ModelConfig(
-        model_type=args.model_type,
-        output_type=args.output_type
-    )
-
     # Call the simulation function with parsed arguments
     decentralized_simulation(
-        model_config=model_config,
+        model_type=args.model_type,
         data_folder=args.data_folder,
         data_file=args.data_file,
         save_dir=args.save_dir,

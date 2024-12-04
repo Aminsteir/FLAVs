@@ -48,32 +48,29 @@ This project investigates the application of **federated learning** (FL) to auto
 
 ```
 Project/
-├── data/                      # Datasets for training and testing
-│   ├── base_model_training/   # Data for training the initial base model
-│   ├── training_data/         # Data for federated learning simulations
-├── models/                    # Neural network architectures
-│   ├── base_model.py          # Base class for models
-│   ├── dual_stream.py         # Dual-Stream Model
-│   ├── spatio_temporal.py     # Spatio-Temporal Model
-│   ├── temporal_transformer.py# Temporal Transformer Model
-│   ├── model_config.py        # Dynamic model configuration
-│   ├── registry.py            # Model registry for dynamic retrieval
-├── simulations/               # Federated learning simulation scripts
-│   ├── centralized.py         # Centralized FL simulation
-│   ├── decentralized.py       # Decentralized FL simulation
-├── utils/                     # Utility functions
-│   ├── aggregation.py         # Federated averaging logic
-│   ├── data_loader.py         # Dataset loader for video and optical flow
-│   ├── logging_utils.py       # Logging tools for metrics
-│   ├── optical_flow.py        # Optical flow computation utility
-│   ├── split_dataset.py       # Dataset splitting for workers
-│   ├── swap_data.py           # Random data swapping between workers
-├── workers/                   # Worker simulation code
-│   ├── worker.py              # Individual worker class for FL
-├── train_base_model.py        # Script for training the base model
-├── visualization/             # Visualization tools
+├── data/                          # Datasets for training and testing
+│   ├── base_model_training/       # Data for training the initial base model
+│   ├── training_data/             # Data for federated learning simulations
+├── models/                        # Neural network architectures
+│   ├── dual_stream.py             # Dual-Stream Model
+│   ├── spatio_temporal.py         # Spatio-Temporal Model
+│   ├── temporal_transformer.py    # Temporal Transformer Model
+│   ├── registry.py                # Model registry for dynamic retrieval
+├── simulations/                   # Federated learning simulation scripts
+│   ├── centralized.py             # Centralized FL simulation
+│   ├── decentralized.py           # Decentralized FL simulation
+│   ├── worker.py                  # Individual worker class for FL
+├── utils/                         # Utility functions
+│   ├── aggregation.py             # Federated averaging logic
+│   ├── data_loader.py             # Dataset loader for video and optical flow
+│   ├── logging_utils.py           # Logging tools for metrics
+│   ├── optical_flow.py            # Optical flow computation utility
+│   ├── split_dataset.py           # Dataset splitting for workers
+│   ├── swap_data.py               # Random data swapping between workers
+├── train_base_model.py            # Script for training the base model
+├── testing/                       # Visualization tools
 │   ├── model_performance_video.py # Generate video overlays for predictions
-└── README.md                  # Project documentation
+└── README.md                      # Project documentation
 ```
 
 ---

@@ -1,7 +1,6 @@
 import os
 import random
 from torch.utils.data import Subset
-from models.model_config import ModelConfig
 from utils.optical_flow import compute_optical_flow
 import torch
 from torch.utils.data import Dataset
@@ -10,24 +9,14 @@ from PIL import Image
 import numpy as np
 
 class AutonomousVehicleDataset(Dataset):
-    def __init__(self, data_folder, data_file, model_config: ModelConfig, image_size=(256, 455)):
-        """
-        Dataset for loading images and preparing inputs based on model type.
-
-        Args:
-            data_folder (str): Path to the folder containing images.
-            data_file (str): Path to the file containing image-to-angle mappings.
-            model_config (ModelConfig): Model configuration for training/inference.
-            image_size (tuple): Image size (height, width).
-        """
+    def __init__(self, data_folder, data_file, model_type, image_size=(256, 455)):
         self.data_folder = data_folder
-        self.model_config = model_config
+        self.model_type = model_type
         self.image_size = image_size
         self.data = []
         self.transform = transforms.Compose([
             transforms.Resize(image_size),
-            transforms.ToTensor(),  # Convert to [0, 1]
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # Normalize to [-1, 1]
+            transforms.ToTensor(),  # Convert frame to [0, 1]
         ])
         
         # Load data file (format: filename steering_angle)
@@ -59,9 +48,9 @@ class AutonomousVehicleDataset(Dataset):
         ]
         frames = [Image.open(fp).convert("RGB") for fp in frame_paths]
 
-        target = self.model_config.prepare_targets(current_item[1])
+        target = torch.tensor(current_item[1], dtype=torch.float32) # load gt_angle in tensor form
 
-        if self.model_config.model_type == "dual_stream":
+        if self.model_type == "dual_stream":
             # Compute optical flow for dual-stream model
             optical_flow_1 = compute_optical_flow(frames[0], frames[1])
             optical_flow_2 = compute_optical_flow(frames[1], frames[2])
@@ -70,7 +59,7 @@ class AutonomousVehicleDataset(Dataset):
             flow_input = torch.stack([optical_flow_1, optical_flow_2], dim=0)  # Shape: [2, H, W]
             return frame_input, flow_input, target
 
-        elif self.model_config.model_type in ["spatio_temporal", "temporal_transformer"]:
+        elif self.model_type in ["spatio_temporal", "temporal_transformer"]:
             frame_input = torch.stack([self.transform(frame) for frame in frames], dim=0)  # Shape: [3, 3, H, W]
             return frame_input, target
 
