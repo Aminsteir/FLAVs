@@ -14,8 +14,7 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
     # Step 2: Split dataset into training and validation sets
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [split_ratio, 1 - split_ratio])
 
-    # train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=1)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
 
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
