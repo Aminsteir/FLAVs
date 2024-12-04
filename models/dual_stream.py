@@ -24,7 +24,7 @@ class DualStreamModel(nn.Module):
 
         # Fully connected layers
         self.fc = nn.Sequential(
-            nn.Linear(83328, 256),
+            nn.Linear(64848, 256),
             nn.ReLU(),
             nn.Dropout(p=0.2),
             nn.Linear(256, 64),
