@@ -37,7 +37,7 @@ class Worker:
                 inputs, targets = [inp.to(self.device) for inp in inputs], targets.to(self.device)
 
                 optimizer.zero_grad()
-                outputs = self.model(*inputs)
+                outputs = self.model(*inputs).squeeze(-1)
                 loss = self.loss_fn(outputs, targets)
                 loss.backward()
                 optimizer.step()
@@ -56,7 +56,7 @@ class Worker:
                 *inputs, targets = batch
                 inputs, targets = [inp.to(self.device) for inp in inputs], targets.to(self.device)
                 
-                outputs = self.model(*inputs)
+                outputs = self.model(*inputs).squeeze(-1)
                 loss = self.loss_fn(outputs, targets)
                 total_loss += loss.item()
 

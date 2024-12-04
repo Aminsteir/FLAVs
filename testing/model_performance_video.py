@@ -90,8 +90,7 @@ def create_visualization_video(model, dataset, output_video_path, model_type, fp
         # Perform model inference and measure time
         start_time = time.time()
         with torch.no_grad():
-            outputs = model(*inputs)
-            predicted_angle = outputs.squeeze(0).item()
+            predicted_angle = model(*inputs).squeeze(-1).item()
         end_time = time.time()
 
         # Record inference time

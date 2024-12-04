@@ -38,7 +38,7 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
             inputs, targets = [inp.to(device) for inp in inputs], targets.to(device)
 
             optimizer.zero_grad()
-            outputs = model(*inputs)
+            outputs = model(*inputs).squeeze(-1)
             loss = loss_fn(outputs, targets)
             loss.backward()
             optimizer.step()
@@ -59,7 +59,7 @@ def train_base_model(model_type, data_folder, data_file, save_path, split_ratio=
                 *inputs, targets = batch
                 inputs, targets = [inp.to(device) for inp in inputs], targets.to(device)
 
-                outputs = model(*inputs)
+                outputs = model(*inputs).squeeze(-1)
                 loss = loss_fn(outputs, targets)
                 val_loss += loss.item()
 

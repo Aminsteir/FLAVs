@@ -21,8 +21,7 @@ def plot_steering_angles(model, dataset, output_plot_path, model_type, device="c
         ground_truth_angle = target.item()
 
         with torch.no_grad():
-            outputs = model(*inputs)
-            predicted_angle = outputs.squeeze(0).item()
+            predicted_angle = model(*inputs).squeeze(-1).item()
 
         timestamps.append(idx)
         ground_truth_angles.append(ground_truth_angle)
