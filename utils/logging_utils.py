@@ -65,9 +65,10 @@ class Logger:
             accuracy (float): Accuracy value (optional).
             mode (str): Mode ("train" or "test").
         """
-        self.tensorboard_writer.add_scalar(f"{mode}_loss", loss, epoch)
+        self.tensorboard_writer.add_scalar(f"loss/{mode}", loss, epoch)  # Shared prefix "loss/"
         if accuracy is not None:
-            self.tensorboard_writer.add_scalar(f"{mode}_accuracy", accuracy, epoch)
+            self.tensorboard_writer.add_scalar(f"accuracy/{mode}", accuracy, epoch)
+
 
     def log(self, epoch, mode, loss, accuracy=None):
         """
