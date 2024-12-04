@@ -28,9 +28,9 @@ def main():
     data_folder = "data/base_model_training/data/"
     data_file = "data/base_model_training/data.txt"
     save_dir = "build/"
-    epochs = 30
-    batch_size = 128
-    lr = 1e-4
+    epochs = 25
+    batch_size = 512
+    lr = 4e-4
     device = "cuda"
 
     # Ensure save directory exists

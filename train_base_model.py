@@ -96,6 +96,9 @@ if __name__ == "__main__":
 
     save_path = os.path.join(args.save_dir, f"{args.model_type}-base_model.pth")
 
+    print(f"Training {args.model_type} w/ batch_size {args.batch_size} for {args.epochs} epochs")
+    print("*" * 80)
+
     # Train the base model
     train_base_model(
         model_type=args.model_type,
