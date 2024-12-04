@@ -26,7 +26,7 @@ def main(model_type):
     data_folder = "data/base_model_training/data/"
     data_file = "data/base_model_training/data.txt"
     save_dir = "build/"
-    epochs = 30
+    epochs = 40
     batch_size = 64
     lr = 2e-4
     device = "cuda"
