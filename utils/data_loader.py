@@ -82,8 +82,8 @@ class AutonomousVehicleDataset(Dataset):
             # Compute optical flow for dual-stream model
             if self.precompute_flow:
                 flow_input = [
-                    torch.load(os.path.join(self.flow_save_dir, f"flow_{max(index - 1, 0)}.pt")),
-                    torch.load(os.path.join(self.flow_save_dir, f"flow_{index}.pt"))
+                    torch.load(os.path.join(self.flow_save_dir, f"flow_{max(index - 1, 0)}.pt"), weights_only=True),
+                    torch.load(os.path.join(self.flow_save_dir, f"flow_{index}.pt"), weights_only=True)
                 ]
                 flow_input = torch.stack(flow_input, dim=0)  # Shape: [2, H, W]
             else:

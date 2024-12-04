@@ -55,14 +55,21 @@ class DualStreamModel(nn.Module):
         frame = self.frame_pool(frame)
         frame = torch.flatten(frame, start_dim=1)
 
-        # Optical flow stream processing
+        # Flow stream processing
         flow = F.elu(self.flow_conv1(flow_input))
         flow = F.elu(self.flow_conv2(flow))
         flow = self.flow_pool(flow)
         flow = torch.flatten(flow, start_dim=1)
 
+        # Debugging: Print the shapes of each stream
+        print(f"Frame stream output shape: {frame.shape}")
+        print(f"Flow stream output shape: {flow.shape}")
+
         # Concatenate the outputs of both streams
         combined = torch.cat((frame, flow), dim=1)
+
+        # Debugging: Print the shape of the combined tensor
+        print(f"Combined feature shape: {combined.shape}")
 
         return self.fc(combined).squeeze(-1)
 
