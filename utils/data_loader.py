@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 import os
 import random
 from torch.utils.data import Subset
@@ -30,20 +31,19 @@ class AutonomousVehicleDataset(Dataset):
         
         if model_type == "dual_stream" and precompute_flow:
             self.flow_save_dir = f"{data_folder}/flow/"
-            try:
+            if os.path.exists(self.flow_save_dir):
+                print("Folder exists for precomputed flow values. Using existing folder for training.")
+            else:
                 # os.makedirs(save_dir, exist_ok=True)
                 os.makedirs(self.flow_save_dir)
                 self._precompute_optical_flow()
-            except OSError as e:
-                print("Folder exists for precomputed flow values. Using existing folder for training.")
-            
 
     def _precompute_optical_flow(self):
         """Precompute and save optical flow maps for the entire dataset."""
-        print("Precomputing optical flow maps...")
-        for i in range(len(self.data)):  # Skip the last frame
-            frame1_path = os.path.join(self.data_folder, self.data[max(i - 1, 0)][0])
-            frame2_path = os.path.join(self.data_folder, self.data[i][0])
+
+        def _compute_and_save_flow(args):
+            """Helper function to compute and save optical flow for a given pair of frames."""
+            frame1_path, frame2_path, flow_save_path = args
 
             # Load frames and compute flow
             frame1 = Image.open(frame1_path).convert("RGB")
@@ -51,8 +51,21 @@ class AutonomousVehicleDataset(Dataset):
             flow = compute_optical_flow(frame1, frame2)
 
             # Save optical flow map
-            flow_save_path = os.path.join(self.flow_save_dir, f"flow_{i}.pt")
             torch.save(flow, flow_save_path)
+
+        print("Precomputing optical flow maps...")
+
+        # Prepare arguments for parallel processing
+        tasks = []
+        for i in range(len(self.data)):
+            frame1_path = os.path.join(self.data_folder, self.data[max(i - 1, 0)][0])
+            frame2_path = os.path.join(self.data_folder, self.data[i][0])
+            flow_save_path = os.path.join(self.flow_save_dir, f"flow_{i}.pt")
+            tasks.append((frame1_path, frame2_path, flow_save_path))
+
+        # Use ThreadPoolExecutor to parallelize the computation
+        with ThreadPoolExecutor(max_workers=4) as executor:  # Adjust max_workers based on your CPU cores
+            executor.map(_compute_and_save_flow, tasks)
             
     def __len__(self):
         return len(self.data)
