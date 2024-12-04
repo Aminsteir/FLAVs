@@ -3,24 +3,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class DualStreamModel(nn.Module):
-    def __init__(self, input_channels=9, flow_channels=2, image_size=(256, 455), **kwargs):
+    def __init__(self, **kwargs):
         """
         Dual-Stream Convolutional Neural Network for autonomous driving.
 
         Args:
-            input_channels (int): Number of channels in the frame stream input (default: 3 frames * 3 channels = 9).
-            flow_channels (int): Number of channels in the optical flow stream input (default: 2 flows = 2 channels).
             image_size (tuple): Height and width of the input images.
         """
         super(DualStreamModel, self).__init__()
 
         # Frame stream (processes RGB frames)
-        self.frame_conv1 = nn.Conv2d(input_channels, 12, kernel_size=3, stride=2, padding=1)
+        self.frame_conv1 = nn.Conv2d(9, 12, kernel_size=3, stride=2, padding=1)
         self.frame_conv2 = nn.Conv2d(12, 24, kernel_size=3, stride=2, padding=1)
         self.frame_pool = nn.MaxPool2d(kernel_size=4, stride=2)
 
         # Optical flow stream (processes optical flow images)
-        self.flow_conv1 = nn.Conv2d(flow_channels, 12, kernel_size=3, stride=2, padding=1)
+        self.flow_conv1 = nn.Conv2d(2, 12, kernel_size=3, stride=2, padding=1)
         self.flow_conv2 = nn.Conv2d(12, 24, kernel_size=3, stride=2, padding=1)
         self.flow_pool = nn.MaxPool2d(kernel_size=4, stride=2)
 
