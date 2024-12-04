@@ -28,9 +28,15 @@ class DualStreamModel(nn.Module):
         self.conv_output_size = self._calculate_conv_output(image_size)
 
         # Fully connected layers
-        self.fc1 = nn.Linear(24 * self.conv_output_size * 2, 256)  # Concatenate frame and flow streams
-        self.fc2 = nn.Linear(256, 10)
-        self.output = nn.Linear(10, 1)
+        self.fc = nn.Sequential(
+            nn.Linear(24 * self.conv_output_size * 2, 256),
+            nn.ReLU(),
+            nn.Dropout(p=0.1),
+            nn.Linear(256, 64),
+            nn.ReLU(),
+            nn.Dropout(p=0.1),
+            nn.Linear(64, 1)
+        )
 
     def forward(self, frame_input, flow_input):
         """
@@ -58,11 +64,7 @@ class DualStreamModel(nn.Module):
         # Concatenate the outputs of both streams
         combined = torch.cat((frame, flow), dim=1)
 
-        # Fully connected layers
-        x = F.relu(self.fc1(combined))
-        x = F.relu(self.fc2(x))
-
-        return self.output(x).squeeze(-1)
+        return self.fc(combined).squeeze(-1)
 
     def _calculate_conv_output(self, image_size):
         """
