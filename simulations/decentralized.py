@@ -23,7 +23,7 @@ def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_
     ]
 
     # Start logger
-    logger = Logger(log_dir="logs", scenario="decentralized")
+    logger = Logger(log_dir="logs", scenario=f"decentralized_{num_workers}")
 
     # Step 4: Decentralized learning rounds
     for round_num in range(rounds):

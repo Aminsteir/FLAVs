@@ -31,7 +31,7 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
     global_weights = global_model.state_dict()
 
     # Start logger
-    logger = Logger(log_dir="logs", scenario="centralized")
+    logger = Logger(log_dir="logs", scenario=f"centralized_{num_workers}")
 
     # Federated learning rounds
     for round_num in range(rounds):
