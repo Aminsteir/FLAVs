@@ -52,7 +52,7 @@ def run_fed_job(fed_type, model_type, data_folder, data_file, save_dir, save_fre
 def main():
     parser = argparse.ArgumentParser(description="Federated Learning Scheduler")
     parser.add_argument("--fed_type", type=str, required=True, help="Federated learning training type")
-    parser.add_argument("--num_workers", type=int, default=4, help="Number of workers used in training")
+    parser.add_argument("--num_workers", type=int, default=5, help="Number of workers used in training")
 
     args = parser.parse_args()
 
@@ -63,10 +63,10 @@ def main():
 
     save_freq = 10
     rounds = 50
-    epochs_per_worker = 5
+    epochs_per_worker = 4
     batch_size = 32
     subset_ratio = 0.15
-    lr = 1e-5
+    lr = 2e-5
     device = "cuda"
 
     save_dir = f"build/{args.fed_type}/{args.num_workers}_workers/"
