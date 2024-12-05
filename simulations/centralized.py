@@ -27,7 +27,7 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
     global_model = get_model(model_type).to(device)
     if base_model_path:
         print(f"Loading global model from {base_model_path}")
-        global_model.load_state_dict(torch.load(base_model_path, map_location=device))
+        global_model.load_state_dict(torch.load(base_model_path, map_location=device, weights_only=True))
     global_weights = global_model.state_dict()
 
     # Start logger
