@@ -2,7 +2,7 @@ import torch
 
 def split_dataset_for_workers(dataset, num_workers, sequence_length=3):
     """
-    Split the dataset into non-overlapping subsets for each worker.
+    Split the dataset into contiguous subsets for each worker.
 
     Args:
         dataset (Dataset): Complete dataset to be split.
@@ -28,5 +28,13 @@ def split_dataset_for_workers(dataset, num_workers, sequence_length=3):
     # Make sure each worker's dataset size is sufficient for at least one sequence
     worker_data_sizes = [max(size, sequence_length) for size in worker_data_sizes]
 
-    # Split the dataset into non-overlapping subsets
-    return torch.utils.data.random_split(dataset, worker_data_sizes)
+    # Generate start indices for each worker's contiguous subset
+    start_indices = [sum(worker_data_sizes[:i]) for i in range(num_workers)]
+
+    # Create contiguous subsets for each worker
+    subsets = [
+        torch.utils.data.Subset(dataset, list(range(start, start + size)))
+        for start, size in zip(start_indices, worker_data_sizes)
+    ]
+
+    return subsets

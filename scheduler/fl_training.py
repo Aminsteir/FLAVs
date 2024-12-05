@@ -1,3 +1,4 @@
+import argparse
 import os
 import subprocess
 from itertools import product
@@ -49,45 +50,46 @@ def run_fed_job(fed_type, model_type, data_folder, data_file, save_dir, save_fre
 
 
 def main():
-    # Parameters for the training jobs
-    fed_types = ["centralized", "decentralized"]
+    parser = argparse.ArgumentParser(description="Federated Learning Scheduler")
+    parser.add_argument("--fed_type", type=str, required=True, help="Federated learning training type")
+    parser.add_argument("--num_workers", type=int, default=4, help="Number of workers used in training")
+
+    args = parser.parse_args()
 
     data_folder = "data/training_data/data/"
     data_file = "data/training_data/data.txt"
     model_type = "dual_stream"
     base_model_path = "build/dual_stream-base_model.pth"
+
     save_freq = 10
-    num_workers = [4, 8]
     rounds = 50
-    epochs_per_worker = 2
+    epochs_per_worker = 5
     batch_size = 32
-    subset_ratio = 0.25
+    subset_ratio = 0.15
     lr = 1e-5
     device = "cuda"
 
-    for fed_type in fed_types:
-        for num_worker in num_workers:
-            save_dir = f"build/{fed_type}/{num_worker}_workers/"
-            os.makedirs(save_dir, exist_ok=True)
+    save_dir = f"build/{args.fed_type}/{args.num_workers}_workers/"
+    os.makedirs(save_dir, exist_ok=True)
 
-            run_fed_job(
-                fed_type, 
-                model_type, 
-                data_folder, 
-                data_file, 
-                save_dir, 
-                save_freq, 
-                num_worker, 
-                rounds, 
-                epochs_per_worker, 
-                batch_size, 
-                subset_ratio, 
-                lr, 
-                base_model_path, 
-                device
-            )
+    run_fed_job(
+        args.fed_type, 
+        model_type, 
+        data_folder, 
+        data_file, 
+        save_dir, 
+        save_freq, 
+        args.num_workers, 
+        rounds, 
+        epochs_per_worker, 
+        batch_size, 
+        subset_ratio, 
+        lr, 
+        base_model_path, 
+        device
+    )
 
-    print("All fed training jobs completed.")
+    print("Training job completed.")
 
 if __name__ == "__main__":
     main()
