@@ -52,14 +52,14 @@ def main():
 
     data_folder = "data/training_data/data/"
     data_file = "data/training_data/data.txt"
-    model_type = "temporal_transformer"
-    base_model_path = "build/temporal_transformer-base_model.pth"
-    save_freq = 5
+    model_type = "dual_stream"
+    base_model_path = "build/dual_stream-base_model.pth"
+    save_freq = 10
     num_workers = [4, 8]
-    rounds = 100
+    rounds = 50
     epochs_per_worker = 2
     batch_size = 32
-    subset_ratio = 0.5
+    subset_ratio = 0.25
     lr = 1e-5
     device = "cuda"
 

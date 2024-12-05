@@ -130,11 +130,11 @@ if __name__ == "__main__":
 
     output_video_path = os.path.join(args.output_dir, f"{args.model_type}-driving_visualization.mp4")
 
-    dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, args.model_type).sample_subset(args.subset_fraction)
+    dataset = AutonomousVehicleDataset(args.data_folder, args.data_file, args.model_type, precompute_flow=False).sample_subset(args.subset_fraction)
 
     # Load model
     model = get_model(model_type=args.model_type)
-    model.load_state_dict(torch.load(args.model_path, map_location=args.device))
+    model.load_state_dict(torch.load(args.model_path, map_location=args.device, weights_only=True))
 
     # Create the video
     create_visualization_video(
