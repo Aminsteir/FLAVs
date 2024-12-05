@@ -15,7 +15,7 @@ class Worker:
         # Load pretrained base model if provided
         if base_model_path:
             print(f"Worker {self.worker_id} loading base model from {base_model_path}")
-            self.model.load_state_dict(torch.load(base_model_path, map_location=device))
+            self.model.load_state_dict(torch.load(base_model_path, map_location=device, weights_only=True))
 
         # Split the dataset into train/test
         self.train_dataset, self.test_dataset = random_split(dataset, [split_ratio, 1 - split_ratio])
