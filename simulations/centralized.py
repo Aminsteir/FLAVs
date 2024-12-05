@@ -70,7 +70,7 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
         swap_worker_data(workers)
 
         # Log round-level metrics
-        logger.log(epoch=round + 1, mode="train", loss=avg_loss)
+        logger.log(epoch=round_num + 1, mode="train", loss=avg_loss)
 
         # Log testing metrics after aggregation
         test_loss = 0
@@ -78,7 +78,7 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
             test_loss += worker.evaluate()
         avg_loss = test_loss / len(workers)
 
-        logger.log(epoch=round + 1, mode="test", loss=avg_loss)
+        logger.log(epoch=round_num + 1, mode="test", loss=avg_loss)
 
     logger.close()
 
