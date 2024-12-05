@@ -33,7 +33,7 @@ def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_
         neighbors_map = {
             i: random.sample(
                 [j for j in range(num_workers) if j != i],  # Exclude self
-                random.randint(2, 4)  # Randomly select 2 to 4 peers
+                random.randint(2, min(num_workers - 1, 4))  # Randomly select 2 to 4 peers
             )
             for i in range(num_workers)
         }
