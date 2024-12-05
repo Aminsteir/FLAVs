@@ -43,7 +43,7 @@ class Worker:
                 optimizer.step()
                 total_loss += loss.item()
 
-            avg_loss = total_loss / len(self.train_loader)
+            avg_loss = total_loss / len(train_loader)
             print(f"Worker {self.worker_id} - Epoch {epoch + 1}, Loss: {avg_loss:.6f}")
         
         return avg_loss
