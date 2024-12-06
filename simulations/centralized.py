@@ -10,6 +10,8 @@ from utils.aggregation import federated_average
 from utils.swap_data import swap_worker_data
 import argparse
 
+from utils.worker_training_utils import parallelize_workers
+
 def centralized_simulation(model_type, data_folder, data_file, save_dir, save_freq=5, num_workers=10, rounds=4, epochs_per_worker=1, lr=0.00001, subset_ratio=0.2, batch_size=8, base_model_path=None, device='cpu'):
     # Load the dataset
     dataset = AutonomousVehicleDataset(data_folder, data_file, model_type)
@@ -37,15 +39,13 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
     for round_num in range(rounds):
         print(f"\n=== Round {round_num + 1}/{rounds} ===")
 
-        # Local training
-        worker_weights = []
-        test_loss = 0
-        for worker in workers:
-            print(f"Worker {worker.worker_id} training...")
-            test_loss += worker.train(epochs=epochs_per_worker, lr=lr, subset_ratio=subset_ratio)
-            worker_weights.append(worker.send_weights())
-        
-        avg_loss = test_loss / len(workers)
+        # Worker training
+        train_results = parallelize_workers(workers, train=True, epochs=epochs_per_worker, lr=lr, subset_ratio=subset_ratio)
+        worker_weights = [result["weights"] for result in train_results]
+        avg_losses = [result["avg_loss"] for result in train_results]
+        avg_loss = sum(avg_losses) / len(avg_losses)
+
+        print(f"Round {round_num + 1} - Average Training Loss: {avg_loss:.6f}")
 
         # Server aggregates weights
         print("Server aggregating weights...")
@@ -66,17 +66,15 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
             worker.update_weights(global_weights)
         # U --- End update weights #
 
-        # Randomly swap worker data -- simulate new environments
-        swap_worker_data(workers)
-
         # Log round-level metrics
         logger.log(epoch=round_num + 1, mode="train", loss=avg_loss)
 
-        # Log testing metrics after aggregation
-        test_loss = 0
-        for worker in workers:
-            test_loss += worker.evaluate()
-        avg_loss = test_loss / len(workers)
+        # Parallelize evaluation
+        eval_results = parallelize_workers(workers, train=False)
+        eval_losses = [result["avg_loss"] for result in eval_results]
+        avg_loss = sum(eval_losses) / len(eval_losses)
+
+        print(f"Round {round_num + 1} - Average Evaluation Loss: {avg_loss:.6f}")
 
         logger.log(epoch=round_num + 1, mode="test", loss=avg_loss)
 

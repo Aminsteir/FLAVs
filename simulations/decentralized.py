@@ -8,6 +8,7 @@ from simulations.worker import Worker
 from utils.data_loader import AutonomousVehicleDataset
 from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
+from utils.worker_training_utils import parallelize_workers
 
 def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_freq=5, num_workers=5, rounds=5, epochs_per_worker=3, lr=1e-5, subset_ratio=0.2, batch_size=8, base_model_path=None, device='cpu'):
     # Step 1: Load the dataset
@@ -33,27 +34,35 @@ def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_
         neighbors_map = {
             i: random.sample(
                 [j for j in range(num_workers) if j != i],  # Exclude self
-                random.randint(2, min(num_workers - 1, 4))  # Randomly select 2 to 4 peers
+                min(num_workers - 1, random.randint(1, 4))  # Randomly select 2 to 4 peers
             )
             for i in range(num_workers)
         }
         print(f"Dynamic Neighbor Map for Round {round_num + 1}: {neighbors_map}")
 
         # Step 4.2: Local training
-        train_loss = 0
-        for worker in workers:
-            print(f"Worker {worker.worker_id} training...")
-            train_loss += worker.train(epochs=epochs_per_worker, lr=lr, subset_ratio=subset_ratio)
+        # train_loss = 0
+        # for worker in workers:
+        #     print(f"Worker {worker.worker_id} training...")
+        #     train_loss += worker.train(epochs=epochs_per_worker, lr=lr, subset_ratio=subset_ratio)
 
-        avg_loss = train_loss / len(workers)
+        # avg_loss = train_loss / len(workers)
+
+        # Parallelize local training
+        train_results = parallelize_workers(workers, train=True, epochs=epochs_per_worker, lr=lr, subset_ratio=subset_ratio)
+        worker_weights = {result["worker_id"]: result["weights"] for result in train_results}
+        avg_losses = [result["avg_loss"] for result in train_results]
+        avg_loss = sum(avg_losses) / len(avg_losses)
+
+        print(f"Round {round_num + 1} - Average Training Loss: {avg_loss:.6f}")
 
         print("Aggegrating model weights with neighbors...")
 
         # Step 4.3: Peer-to-peer weight sharing and averaging
         updated_weights = {}
         for worker in workers:
-            peer_weights = [workers[peer_id].send_weights() for peer_id in neighbors_map[worker.worker_id]]
-            local_weights = worker.send_weights()
+            peer_weights = [worker_weights[peer_id] for peer_id in neighbors_map[worker.worker_id]]
+            local_weights = worker_weights[worker.worker_id]
             new_weights = federated_average([local_weights] + peer_weights)
             updated_weights[worker.worker_id] = new_weights
 
@@ -66,17 +75,15 @@ def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_
                 worker_save_path = os.path.join(save_dir, f"{model_type}-decentralized-round_{round_num + 1}-worker_{worker.worker_id}.pth")
                 worker.save_weights(worker_save_path)
 
-        # Randomly swap worker data -- simulate new environments
-        swap_worker_data(workers)
-
         # Log round-level metrics
         logger.log(epoch=round_num + 1, mode="train", loss=avg_loss)
 
-        # Log testing metrics after aggregation
-        test_loss = 0
-        for worker in workers:
-            test_loss += worker.evaluate()
-        avg_loss = test_loss / len(workers)
+        # Parallelize evaluation
+        eval_results = parallelize_workers(workers, train=False)
+        eval_losses = [result["avg_loss"] for result in eval_results]
+        avg_loss = sum(eval_losses) / len(eval_losses)
+
+        print(f"Round {round_num + 1} - Average Evaluation Loss: {avg_loss:.6f}")
 
         logger.log(epoch=round_num + 1, mode="test", loss=avg_loss)
 
