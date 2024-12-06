@@ -53,6 +53,7 @@ def main():
     parser = argparse.ArgumentParser(description="Federated Learning Scheduler")
     parser.add_argument("--fed_type", type=str, required=True, help="Federated learning training type")
     parser.add_argument("--num_workers", type=int, default=5, help="Number of workers used in training")
+    parser.add_argument("--subset_ratio", type=float, default=0.15, help="Subset of worker dataset that each worker trains from each round.")
 
     args = parser.parse_args()
 
@@ -65,7 +66,7 @@ def main():
     rounds = 50
     epochs_per_worker = 4
     batch_size = 32
-    subset_ratio = 0.15
+    subset_ratio = args.subset_ratio
     lr = 2e-5
     device = "cuda"
 
