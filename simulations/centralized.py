@@ -9,7 +9,6 @@ from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 from utils.swap_data import swap_worker_data
 import argparse
-import torch.multiprocessing as mp
 
 from utils.worker_training_utils import parallelize_workers
 
@@ -40,13 +39,17 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
     for round_num in range(rounds):
         print(f"\n=== Round {round_num + 1}/{rounds} ===")
 
-        # Worker training
-        train_results = parallelize_workers(workers, train=True, epochs=epochs_per_worker, lr=lr, subset_ratio=subset_ratio)
-        worker_weights = [result["weights"] for result in train_results]
-        avg_losses = [result["avg_loss"] for result in train_results]
-        avg_loss = sum(avg_losses) / len(avg_losses)
+        # Local training
+        worker_weights = []
+        train_loss = 0
+        for worker in workers:
+            print(f"Worker {worker.worker_id} training...")
+            train_loss += worker.train(epochs=epochs_per_worker, lr=lr, subset_ratio=subset_ratio)
+            worker_weights.append(worker.send_weights())
+        
+        avg_loss = train_loss / len(workers)
 
-        print(f"Round {round_num + 1} - Average Training Loss: {avg_loss:.6f}")
+        print(f"Round {round_num + 1} - Average training loss: {avg_loss:.6f}")
 
         # Server aggregates weights
         print("Server aggregating weights...")
@@ -70,12 +73,13 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
         # Log round-level metrics
         logger.log(epoch=round_num + 1, mode="train", loss=avg_loss)
 
-        # Parallelize evaluation
-        eval_results = parallelize_workers(workers, train=False)
-        eval_losses = [result["avg_loss"] for result in eval_results]
-        avg_loss = sum(eval_losses) / len(eval_losses)
+        # Log testing metrics after aggregation
+        test_loss = 0
+        for worker in workers:
+            test_loss += worker.evaluate()
+        avg_loss = test_loss / len(workers)
 
-        print(f"Round {round_num + 1} - Average Evaluation Loss: {avg_loss:.6f}")
+        print(f"Round {round_num + 1} - Average test loss: {avg_loss:.6f}")
 
         logger.log(epoch=round_num + 1, mode="test", loss=avg_loss)
 
@@ -88,9 +92,6 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
 
 
 if __name__ == "__main__":
-    # Set multiprocessing start method
-    mp.set_start_method("spawn", force=True)
-
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Centralized Federated Learning Simulation")
     parser.add_argument("--model_type", type=str, default="dual_stream", help="Model type to train")
