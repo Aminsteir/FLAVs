@@ -9,6 +9,7 @@ from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 from utils.swap_data import swap_worker_data
 import argparse
+import torch.multiprocessing as mp
 
 from utils.worker_training_utils import parallelize_workers
 
@@ -87,6 +88,9 @@ def centralized_simulation(model_type, data_folder, data_file, save_dir, save_fr
 
 
 if __name__ == "__main__":
+    # Set multiprocessing start method
+    mp.set_start_method("spawn", force=True)
+
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Centralized Federated Learning Simulation")
     parser.add_argument("--model_type", type=str, default="dual_stream", help="Model type to train")

@@ -9,6 +9,7 @@ from utils.data_loader import AutonomousVehicleDataset
 from utils.split_dataset import split_dataset_for_workers
 from utils.aggregation import federated_average
 from utils.worker_training_utils import parallelize_workers
+import torch.multiprocessing as mp
 
 def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_freq=5, num_workers=5, rounds=5, epochs_per_worker=3, lr=1e-5, subset_ratio=0.2, batch_size=8, base_model_path=None, device='cpu'):
     # Step 1: Load the dataset
@@ -95,6 +96,9 @@ def decentralized_simulation(model_type, data_folder, data_file, save_dir, save_
         worker.save_weights(worker_save_path)
 
 if __name__ == "__main__":
+    # Set multiprocessing start method
+    mp.set_start_method("spawn", force=True)
+
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Decentralized Federated Learning Simulation")
     parser.add_argument("--model_type", type=str, default="dual_stream", help="Type of model to train")
