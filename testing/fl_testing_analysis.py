@@ -43,7 +43,7 @@ TEST_SUBSET_FRACTION = 0.1  # Use a small subset for evaluation and plotting
 
 def load_model(model_path, model_type=MODEL_TYPE, device=DEVICE):
     model = get_model(model_type).to(device)
-    state_dict = torch.load(model_path, map_location=device)
+    state_dict = torch.load(model_path, map_location=device, weights_only=True)
     model.load_state_dict(state_dict)
     model.eval()
     return model
@@ -65,7 +65,7 @@ def aggregate_weights(model_paths):
     """Aggregate weights from multiple workers using federated averaging."""
     weights_list = []
     for path in model_paths:
-        weights_list.append(torch.load(path, map_location='cpu'))
+        weights_list.append(torch.load(path, map_location='cpu', weights_only=True))
     avg_weights = federated_average(weights_list)
     return avg_weights
 
@@ -95,7 +95,7 @@ def plot_training_curves():
     plt.title("Training Loss over Federated Rounds")
     plt.grid(True)
     plt.legend()
-    plt.savefig("analysis_outputs/training_loss_comparison.png")
+    plt.savefig("testing/fl_analysis_outputs/training_loss_comparison.png")
     plt.close()
 
 def plot_rmse_bar(rmses_dict):
@@ -113,59 +113,56 @@ def plot_rmse_bar(rmses_dict):
     plt.grid(axis='y')
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    plt.savefig("testing/outputs/rmse_comparison.png")
+    plt.savefig("testing/fl_analysis_outputs/rmse_comparison.png")
     plt.close()
 
-def plot_ground_truth_vs_pred(model_dict, dataset, num_frames=100):
+def plot_ground_truth_vs_pred(model_dict, dataset):
     """
     Plot ground truth vs predicted for a sample of frames.
     model_dict: { "Scenario": model }
     """
     # Take a sample from the dataset
     indices = list(range(len(dataset)))
-    np.random.shuffle(indices)
-    sample_indices = indices[:num_frames]
 
     plt.figure(figsize=(10,6))
     # Ground truth
     ground_truth = []
-    for idx in sample_indices:
+    for idx in indices:
         *_, target = dataset[idx]
         ground_truth.append(target.item())
 
-    plt.plot(range(num_frames), ground_truth, label="Ground Truth", color='black', linewidth=2)
+    plt.plot(indices, ground_truth, label="Ground Truth", color='black', linewidth=2)
 
     for scenario, model in model_dict.items():
         predictions = []
         with torch.no_grad():
-            for idx in sample_indices:
+            for idx in indices:
                 *inputs, target = dataset[idx]
                 inputs = [inp.unsqueeze(0).to(DEVICE) for inp in inputs]
                 pred = model(*inputs).item()
                 predictions.append(pred)
 
-        plt.plot(range(num_frames), predictions, linestyle='--', label=scenario)
+        plt.plot(indices, predictions, linestyle='--', label=scenario)
 
     plt.xlabel("Frame Index (Sample)")
     plt.ylabel("Steering Angle (degrees)")
     plt.title("Ground Truth vs Predicted Steering Angles")
     plt.grid(True)
     plt.legend()
-    plt.savefig("testing/outputs/gt_vs_pred.png")
+    plt.savefig("testing/fl_analysis_outputs/gt_vs_pred.png")
     plt.close()
 
 #############################################
 # Main Analysis
 #############################################
 def main():
-    os.makedirs("analysis_outputs", exist_ok=True)
+    os.makedirs("testing/fl_analysis_outputs/", exist_ok=True)
 
     # Load test dataset
     full_test_dataset = AutonomousVehicleDataset(
         data_folder=TEST_DATA_FOLDER, 
         data_file=TEST_DATA_FILE, 
-        model_type=MODEL_TYPE,
-        precompute_flow=False
+        model_type=MODEL_TYPE
     )
     # We use a subset to speed up evaluation and plotting
     test_dataset = full_test_dataset.sample_subset(TEST_SUBSET_FRACTION)
@@ -235,9 +232,9 @@ def main():
         "Decentr.4W Global": d4_global_model,
         "Decentr.8W Global": d8_global_model
     }
-    plot_ground_truth_vs_pred(model_dict_for_plot, test_dataset, num_frames=100)
+    plot_ground_truth_vs_pred(model_dict_for_plot, test_dataset)
 
-    print("Plots saved in 'testing/outputs' directory.")
+    print("Plots saved in 'testing/fl_analysis_outputs/' directory.")
 
 if __name__ == "__main__":
     main()
