@@ -356,7 +356,7 @@ def main():
 
     # Plot each scenario in its own subplot
     plot_models_subplots(model_dict_for_plot, test_dataset, device=DEVICE, 
-                         output_path="testing/analysis_outputs/scenarios_subplots.png")
+                         output_path="testing/fl_analysis_outputs/scenarios_subplots.png")
 
     # Also, plot each decentralized worker model in its own subplot
     # For clarity, let's make a dictionary for the 4-worker setup and 8-worker setup
@@ -364,10 +364,10 @@ def main():
     d8_worker_dict = {f"Worker {i}": d8_worker_models[i] for i in range(len(d8_worker_models))}
 
     plot_decentralized_workers(d4_worker_dict, test_dataset, device=DEVICE, 
-                               output_path="testing/analysis_outputs/decentr_4workers_subplots.png")
+                               output_path="testing/fl_analysis_outputs/decentr_4workers_subplots.png")
 
     plot_decentralized_workers(d8_worker_dict, test_dataset, device=DEVICE,
-                               output_path="testing/analysis_outputs/decentr_8workers_subplots.png")
+                               output_path="testing/fl_analysis_outputs/decentr_8workers_subplots.png")
 
     print("Plots saved in 'testing/fl_analysis_outputs/' directory.")
 
