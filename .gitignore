@@ -39,3 +39,4 @@ dist/
 
 # Ignore specific visualization outputs
 testing/outputs/*
+testing/fl_analysis_outputs/*

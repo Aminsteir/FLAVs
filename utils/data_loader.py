@@ -32,7 +32,7 @@ class AutonomousVehicleDataset(Dataset):
         if model_type == "dual_stream" and precompute_flow:
             self.flow_save_dir = f"{data_folder}/flow/"
             if os.path.exists(self.flow_save_dir):
-                print("Folder exists for precomputed flow values. Using existing folder for training.")
+                print("Folder exists for precomputed flow values. Using existing folder for loader.")
             else:
                 # os.makedirs(save_dir, exist_ok=True)
                 os.makedirs(self.flow_save_dir)
