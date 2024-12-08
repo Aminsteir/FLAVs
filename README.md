@@ -1,16 +1,12 @@
-# **Autonomous Vehicle Federated Learning with Dual-Stream Models**
+# **Autonomous Vehicle Federated Learning**
 
 ## **Overview**
 
 This project investigates the application of **federated learning** (FL) to autonomous driving systems, comparing the **centralized** and **decentralized** FL architectures. The primary objective is to collaboratively train neural networks across edge devices (vehicles) to predict steering angles from video data while ensuring data privacy and scalability.
 
 ### **Goals**
-1. Train autonomous vehicle models to predict steering angles effectively using video frames and optical flow.
-2. Explore the impact of **different output representations**:
-   - Steering angle in degrees.
-   - Normalized angle representations.
-   - Sin and cos of steering angles.
-3. Compare the performance of **centralized FL** and **decentralized FL** in terms of:
+1. Train autonomous vehicle models to predict steering angles effectively using video frames and optical flow (if using **Dual-Stream Model**).
+2. Compare the performance of **centralized FL** and **decentralized FL** in terms of:
    - Test accuracy.
    - Training efficiency.
    - Scalability.
@@ -22,12 +18,9 @@ This project investigates the application of **federated learning** (FL) to auto
 1. **Model Variants**:
    - **Dual-Stream Model**: Processes frame and optical flow streams separately.
    - **Spatio-Temporal Model**: Incorporates temporal relationships with 3D convolutions.
-   - **Temporal Transformer Model**: Utilizes transformer layers to capture temporal dependencies.
 
-2. **Dynamic Output Handling**:
-   - Models support multiple output types:
-     - `angle`: Steering angle in degrees.
-     - `angle_norm`: Normalized angle using `tanh`.
+2. ** Output Handling**:
+   - Models currently predict raw output steering angle, but we have plans to integrate different output types:
      - `sin_cos`: Predicts `sin` and `cos` components of angles.
 
 3. **Federated Learning**:
@@ -51,25 +44,31 @@ Project/
 ├── data/                          # Datasets for training and testing
 │   ├── base_model_training/       # Data for training the initial base model
 │   ├── training_data/             # Data for federated learning simulations
+│
 ├── models/                        # Neural network architectures
 │   ├── dual_stream.py             # Dual-Stream Model
 │   ├── spatio_temporal.py         # Spatio-Temporal Model
-│   ├── temporal_transformer.py    # Temporal Transformer Model
 │   ├── registry.py                # Model registry for dynamic retrieval
+│
+├── scheduler/                     # Schedule training jobs
+│   ├── base_model_training.py     # Scheduler to train all the base models
+│   ├── fl_training.py             # Scheduler to train all the federated learning models
+│
 ├── simulations/                   # Federated learning simulation scripts
 │   ├── centralized.py             # Centralized FL simulation
 │   ├── decentralized.py           # Decentralized FL simulation
 │   ├── worker.py                  # Individual worker class for FL
-├── utils/                         # Utility functions
-│   ├── aggregation.py             # Federated averaging logic
-│   ├── data_loader.py             # Dataset loader for video and optical flow
-│   ├── logging_utils.py           # Logging tools for metrics
-│   ├── optical_flow.py            # Optical flow computation utility
-│   ├── split_dataset.py           # Dataset splitting for workers
-│   ├── swap_data.py               # Random data swapping between workers
+│
+├── utils/*                        # Utility functions used for training / testing
 ├── train_base_model.py            # Script for training the base model
+│
 ├── testing/                       # Visualization tools
+│   ├── fl_testing_analysis.py     # Test and evaluate the federated learning models
 │   ├── model_performance_video.py # Generate video overlays for predictions
+│   ├── model_viz.py               # Generate and view model architecture (img format)
+│   ├── plot_steering_angles.py    # Generate model prediction plots compared to ground truth
+│   ├── visualize_frames.py        # View sample optical flow images that are used in training / test
+│
 └── README.md                      # Project documentation
 ```
 
@@ -148,13 +147,10 @@ python visualization/model_performance_video.py \
 ### **Models**
 - **Dual-Stream Model**: Separately processes RGB frames and optical flow using convolutional layers.
 - **Spatio-Temporal Model**: Combines spatial and temporal information with 3D convolutions.
-- **Temporal Transformer Model**: Leverages transformer layers for temporal attention.
 
-### **Dynamic Output Representation**
+### **Output Representation**
 - `angle`: Steering angle in degrees.
-- `angle_norm_tanh`: Normalized angle using `tanh`.
-- `angle_norm_clamped`: Scaled and clamped to [-1, 1].
-- `sin_cos`: Predicts sine and cosine of angles for better gradient behavior.
+- `sin_cos` (Future): Predicts sine and cosine of angles for better gradient behavior.
 
 ### **Federated Learning**
 1. **Centralized FL**:
@@ -171,12 +167,8 @@ python visualization/model_performance_video.py \
 ---
 
 ## **Results**
-<!-- 1. **Performance**:
-   - Models trained with `sin_cos` output and circular loss performed best on average.
-   - Centralized FL converged faster but relied heavily on server availability.
-   - Decentralized FL showed robustness to network disruptions. -->
 
-2. **Inference**:
+1. **Inference**:
    - All models achieved inference times suitable for real-time deployment (FPS > 30).
 
 ---
