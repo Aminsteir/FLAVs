@@ -1,0 +1,42 @@
+# Ignore macOS system files
+.DS_Store
+
+# Ignore data folder (raw datasets and large files)
+data/*
+
+# Ignore model files (PyTorch checkpoint files)
+*.pth
+build/*.pth
+
+# Ignore video output files
+*.mp4
+
+# Ignore logs
+logs/*
+*.log
+
+# Ignore compiled Python files
+__pycache__/
+*.py[cod]
+
+# Ignore temporary files and editor configs
+*.swp
+*.swo
+*.bak
+*.tmp
+*.~*
+.vscode/
+.idea/
+
+# Ignore dependency files (if using virtual environments)
+venv/
+env/
+*.egg-info/
+
+# Ignore build artifacts (if applicable)
+build/*
+dist/
+
+# Ignore specific visualization outputs
+testing/outputs/*
+testing/fl_analysis_outputs/*
